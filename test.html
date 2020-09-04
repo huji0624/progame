@@ -1,0 +1,64 @@
+<!DOCTYPE HTML>
+<html>
+   <head>
+   <meta charset="utf-8">
+   <title>菜鸟教程(runoob.com)</title>
+    
+      <script type="text/javascript">
+         
+         function WebSocketTest()
+         {
+            if ("WebSocket" in window)
+            {
+               
+               // 打开一个 web socket
+               var ws = new WebSocket("ws://localhost:8888/echo");
+                
+               ws.onopen = function()
+               {
+                  // Web Socket 已连接上，使用 send() 方法发送数据
+                  ws.send(JSON.stringify({msgtype:0,token:"jaisjis"}));
+               };
+                
+               ws.onmessage = function (evt) 
+               { 
+                  var received_msg = evt.data;
+                  console.log("recv msg:")
+                  console.log(received_msg)
+
+                  let jmsg = JSON.parse(received_msg)
+                  if(jmsg.Msgtype==0){
+                      console.log("login ok.")
+                  }else if(jmsg.Msgtype==1){
+                    ws.send(JSON.stringify({msgtype:2,token:"jaisjis"}));
+                  }else if(jmsg.Msgtype==3){
+                    let x = Math.floor(Math.random()*3)
+                    let y = Math.floor(Math.random()*3)
+                    ws.send(JSON.stringify({msgtype:4,token:"jaisjis",x:x,y:y}));
+                  }
+               };
+                
+               ws.onclose = function()
+               { 
+                  // 关闭 websocket
+                  console.log("连接已关闭..."); 
+               };
+            }
+            
+            else
+            {
+               // 浏览器不支持 WebSocket
+               alert("您的浏览器不支持 WebSocket!");
+            }
+         }
+      </script>
+        
+   </head>
+   <body>
+   
+      <div id="sse">
+         <a href="javascript:WebSocketTest()">运行 WebSocket</a>
+      </div>
+      
+   </body>
+</html>
