@@ -3,6 +3,8 @@
    <head>
    <meta charset="utf-8">
    <title>菜鸟教程(runoob.com)</title>
+
+   <input type="text" value="" id="token">
     
       <script type="text/javascript">
          
@@ -13,11 +15,13 @@
                
                // 打开一个 web socket
                var ws = new WebSocket("ws://localhost:8888/echo");
+
+               var value = document.getElementById("token").value
                 
                ws.onopen = function()
                {
                   // Web Socket 已连接上，使用 send() 方法发送数据
-                  ws.send(JSON.stringify({msgtype:0,token:"jaisjis"}));
+                  ws.send(JSON.stringify({msgtype:0,token:value}));
                };
                 
                ws.onmessage = function (evt) 
@@ -30,11 +34,11 @@
                   if(jmsg.Msgtype==0){
                       console.log("login ok.")
                   }else if(jmsg.Msgtype==1){
-                    ws.send(JSON.stringify({msgtype:2,token:"jaisjis"}));
+                    ws.send(JSON.stringify({msgtype:2,token:value}));
                   }else if(jmsg.Msgtype==3){
                     let x = Math.floor(Math.random()*3)
                     let y = Math.floor(Math.random()*3)
-                    ws.send(JSON.stringify({msgtype:4,token:"jaisjis",x:x,y:y}));
+                    ws.send(JSON.stringify({msgtype:4,token:value,x:x,y:y}));
                   }
                };
                 
@@ -42,6 +46,8 @@
                { 
                   // 关闭 websocket
                   console.log("连接已关闭..."); 
+                  
+                  // setTimeout(WebSocketTest(),1000)
                };
             }
             
