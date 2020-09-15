@@ -3,17 +3,21 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
-	"time"
+	"os"
 	"sort"
+	"strconv"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
 
-func LogDebug(args... interface{}){
-	// log.Println(args...)
+func LogDebug(args ...interface{}) {
+	log.Println(args...)
 }
 
 func WhateverOrigin(r *http.Request) bool {
@@ -32,7 +36,7 @@ type Msg struct {
 }
 
 type PlayerInfo struct {
-	Key string
+	Key  string
 	X    int
 	Y    int
 	Gold int
@@ -43,8 +47,8 @@ type Player struct {
 	rc chan *Msg
 
 	playing bool
-	token string
-	Info *PlayerInfo
+	token   string
+	Info    *PlayerInfo
 }
 
 var upgrader = websocket.Upgrader{CheckOrigin: WhateverOrigin} // use default options
@@ -113,7 +117,7 @@ func echo(w http.ResponseWriter, r *http.Request) {
 
 func ReadLoop(p *Player, token string) {
 	for {
-		if p.playing{
+		if p.playing {
 			outtime := time.Now().Add(1 * time.Second)
 			p.c.SetReadDeadline(outtime)
 		}
@@ -147,16 +151,21 @@ const (
 )
 
 type Game struct {
+	GameID  uint64
 	Msgtype int
 	status  int //-1无效0准备1开始
 	RoundID int
 
 	Tilemap [MapSize][MapSize]*Tile
+
+	roundRecords []string
 }
 
 func initGame(g *Game) {
 	log.Println("init game.")
 	g.RoundID = 0
+	g.GameID = g.GameID + 1
+	g.roundRecords = make([]string, 0, 0)
 	size := MapSize
 	for i := 0; i < size; i++ {
 		for j := 0; j < size; j++ {
@@ -173,7 +182,7 @@ func initGame(g *Game) {
 		v.Info.Gold = 0
 		v.Info.Key = token
 
-		MovePlayer(g,v,x,y)
+		MovePlayer(g, v, x, y)
 	}
 }
 
@@ -184,7 +193,7 @@ func PublicToClientData(data []byte) {
 	}
 }
 
-func pubGameMap(g *Game) {
+func pubGameMap(g *Game) []byte {
 
 	jmsg, err := json.Marshal(g)
 	if err != nil {
@@ -192,9 +201,11 @@ func pubGameMap(g *Game) {
 	} else {
 		PublicToClientData(jmsg)
 	}
+
+	return jmsg
 }
 
-func MovePlayer(g *Game,player *Player,x int,y int){
+func MovePlayer(g *Game, player *Player, x int, y int) {
 	info := player.Info
 
 	t := g.Tilemap[info.Y][info.X]
@@ -204,27 +215,27 @@ func MovePlayer(g *Game,player *Player,x int,y int){
 
 	tt := g.Tilemap[info.Y][info.X]
 
-	delete(t.Players,player.Info.Key)
+	delete(t.Players, player.Info.Key)
 	tt.Players[info.Key] = player
 }
 
 func CheckGameOver(g *Game) bool {
-	if g.RoundID>20{
+	if g.RoundID > 20 {
 		return true
 	}
 
 	return false
 }
 
-func ApplyGameLogic(g *Game){
+func ApplyGameLogic(g *Game) {
 	size := MapSize
 	for i := 0; i < size; i++ {
 		for j := 0; j < size; j++ {
-			t :=  g.Tilemap[i][j]
-			if t.Gold>0 && len(t.Players)>0{
-				tmp := make([]*Player,0,3)
-				for _,v := range t.Players{
-					tmp = append(tmp,v)
+			t := g.Tilemap[i][j]
+			if t.Gold > 0 && len(t.Players) > 0 {
+				tmp := make([]*Player, 0, 3)
+				for _, v := range t.Players {
+					tmp = append(tmp, v)
 				}
 
 				index := rand.Intn(len(tmp))
@@ -236,9 +247,9 @@ func ApplyGameLogic(g *Game){
 	}
 }
 
-func RandomGenGold(g *Game){
-	n := MapSize-1
-	for i:=0;i<n;i++{
+func RandomGenGold(g *Game) {
+	n := MapSize - 1
+	for i := 0; i < n; i++ {
 		r := rand.Intn(MapSize)
 
 		x := rand.Intn(MapSize)
@@ -249,7 +260,7 @@ func RandomGenGold(g *Game){
 	}
 }
 
-func PlayGameRounds(game *Game){
+func PlayGameRounds(game *Game) {
 	initGame(game)
 	for {
 		if len(prepares) == 0 {
@@ -260,9 +271,10 @@ func PlayGameRounds(game *Game){
 		RandomGenGold(game)
 
 		//play loop
-		pubGameMap(game)
+		gmsg := pubGameMap(game)
+		game.roundRecords = append(game.roundRecords, string(gmsg))
 
-		time.Sleep(time.Second/4)
+		time.Sleep(time.Second / 4)
 
 		//wait for move
 		for token, v := range connections {
@@ -272,7 +284,7 @@ func PlayGameRounds(game *Game){
 				log.Println("player is moving:", token)
 				LogStruct(msg)
 
-				MovePlayer(game,v,msg.X,msg.Y)
+				MovePlayer(game, v, msg.X, msg.Y)
 			} else {
 				KickPlayer(v)
 			}
@@ -281,22 +293,29 @@ func PlayGameRounds(game *Game){
 		game.RoundID++
 		ApplyGameLogic(game)
 
-		if CheckGameOver(game){
+		if CheckGameOver(game) {
 			game.status = -1
 			log.Println("Game Over.")
 			SaveGameResult(game)
-			break;
+			break
 		}
 	}
 }
 
 func GameLoop() {
 	game := &Game{status: -1, Msgtype: 3}
+	con, err := ioutil.ReadFile(recordsPath + "/gameid")
+	if err == nil {
+		game.GameID, _ = strconv.ParseUint(string(con), 0, 64)
+	} else {
+		log.Println("read game id err:", err)
+	}
+	log.Println("Game ID:", game.GameID)
 
 	for {
 		log.Println("will prepare for next game.")
 		for {
-			if len(prepares) <= 0 {
+			if len(prepares) <= 1 {
 				time.Sleep(time.Second)
 				log.Println("no player.go on...")
 			} else {
@@ -339,28 +358,28 @@ func GameLoop() {
 	}
 }
 
-func SaveGameResult(g *Game){
-	ps := make([]*Player,0,len(connections))
+func SaveGameResult(g *Game) {
+	ps := make([]*Player, 0, len(connections))
 
 	for _, v := range connections {
-		ps = append(ps,v)
+		ps = append(ps, v)
 	}
 
 	sort.Slice(ps, func(i, j int) bool { return ps[i].Info.Gold > ps[j].Info.Gold })
 
-	if len(ps)>0{
+	if len(ps) > 0 {
 		//firt place get 5 score
 		p := ps[0]
 		records.Scores[p.Info.Key] = records.Scores[p.Info.Key] + 5
 	}
 
-	if len(ps)>1{
+	if len(ps) > 1 {
 		//sec place get 2 score
 		p := ps[1]
 		records.Scores[p.Info.Key] = records.Scores[p.Info.Key] + 2
 	}
 
-	if len(ps)>2{
+	if len(ps) > 2 {
 		//sec place get 2 score
 		p := ps[2]
 		records.Scores[p.Info.Key] = records.Scores[p.Info.Key] + 1
@@ -368,9 +387,17 @@ func SaveGameResult(g *Game){
 
 	LogStruct(ps)
 	LogStruct(records)
+	grecord, _ := json.Marshal(g.roundRecords)
+	fp := fmt.Sprintf("%v/game_%v.json", recordsPath, g.GameID)
+	if err := ioutil.WriteFile(fp, grecord, 0644); err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("write file success...", fp)
+		ioutil.WriteFile(recordsPath+"/gameid", []byte(fmt.Sprintf("%v", g.GameID)), 0644)
+	}
 }
 
-type GameRank struct{
+type GameRank struct {
 	// Gameresults []
 
 	Scores map[string]int
@@ -381,9 +408,9 @@ func home(w http.ResponseWriter, r *http.Request) {
 	out := ""
 
 	bt, err := json.Marshal(records)
-	if err!=nil{
+	if err != nil {
 		out = "error"
-	}else{
+	} else {
 		out = string(bt)
 	}
 
@@ -391,8 +418,13 @@ func home(w http.ResponseWriter, r *http.Request) {
 }
 
 var records *GameRank
+var recordsPath string
 
 func main() {
+	recordsPath = "records"
+
+	os.Mkdir(recordsPath, os.ModePerm)
+
 	records = &GameRank{}
 	records.Scores = make(map[string]int)
 
