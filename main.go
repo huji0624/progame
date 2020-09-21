@@ -433,7 +433,7 @@ func main() {
 	flag.Parse()
 	log.SetFlags(0)
 	http.HandleFunc("/", home)
-	http.HandleFunc("/echo", echo)
+	http.HandleFunc("/ws", echo)
 	// http.HandleFunc("/", home)
 	log.Println("ws server ready...")
 	log.Fatal(http.ListenAndServe("0.0.0.0:8888", nil))
