@@ -443,7 +443,7 @@ func exists(path string) (bool, error) {
 }
 
 func gameHandler(w http.ResponseWriter, r *http.Request) {
-	setupresponse(w)
+	setupresponse(w, r)
 
 	r.ParseForm()
 	gid := r.Form.Get("gid")
@@ -457,7 +457,7 @@ func gameHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func rankHandler(w http.ResponseWriter, r *http.Request) {
-	setupresponse(w)
+	setupresponse(w, r)
 
 	ret := &Rank{}
 
