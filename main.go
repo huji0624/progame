@@ -304,6 +304,7 @@ func PlayGameRounds(game *Game) {
 
 func GameLoop() {
 	game := &Game{status: -1, Msgtype: 3}
+	g_game = game
 	con, err := ioutil.ReadFile(recordsPath + "/gameid")
 	if err == nil {
 		game.GameID, _ = strconv.ParseUint(string(con), 0, 64)
@@ -359,33 +360,18 @@ func GameLoop() {
 }
 
 func SaveGameResult(g *Game) {
-	ps := make([]*Player, 0, len(connections))
-
-	for _, v := range connections {
-		ps = append(ps, v)
+	for _, p := range connections {
+		records.Scores[p.Info.Key] = records.Scores[p.Info.Key] + p.Info.Gold
 	}
 
-	sort.Slice(ps, func(i, j int) bool { return ps[i].Info.Gold > ps[j].Info.Gold })
-
-	if len(ps) > 0 {
-		//firt place get 5 score
-		p := ps[0]
-		records.Scores[p.Info.Key] = records.Scores[p.Info.Key] + 5
+	ps := make([]*GameScore, 0, len(connections))
+	for k, v := range records.Scores {
+		ps = append(ps, &GameScore{Name: k, Gold: v})
 	}
+	sort.Slice(ps, func(i, j int) bool { return ps[i].Gold > ps[j].Gold })
+	records.Sorted = ps
+	records.Count++
 
-	if len(ps) > 1 {
-		//sec place get 2 score
-		p := ps[1]
-		records.Scores[p.Info.Key] = records.Scores[p.Info.Key] + 2
-	}
-
-	if len(ps) > 2 {
-		//sec place get 2 score
-		p := ps[2]
-		records.Scores[p.Info.Key] = records.Scores[p.Info.Key] + 1
-	}
-
-	LogStruct(ps)
 	LogStruct(records)
 	grecord, _ := json.Marshal(g.roundRecords)
 	fp := fmt.Sprintf("%v/game_%v.json", recordsPath, g.GameID)
@@ -397,8 +383,15 @@ func SaveGameResult(g *Game) {
 	}
 }
 
+type GameScore struct {
+	Name string
+	Gold int
+}
+
 type GameRank struct {
 	// Gameresults []
+	Sorted []*GameScore
+	Count  int
 
 	Scores map[string]int
 }
@@ -417,8 +410,86 @@ func home(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte(out))
 }
 
+type Rank struct {
+	Total  []*GameScore
+	First  []*GameScore
+	Second []*GameScore
+	Third  []*GameScore
+	Gid    uint64
+}
+
+func exists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return true, err
+}
+
+func gameHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	gid := r.Form.Get("gid")
+
+	bt, err := ioutil.ReadFile(recordsPath + "/game_" + gid + ".json")
+	if err == nil {
+		_, _ = w.Write(bt)
+	} else {
+		_, _ = w.Write([]byte("no such game."))
+	}
+}
+
+func rankHandler(w http.ResponseWriter, r *http.Request) {
+
+	ret := &Rank{}
+
+	pathes := [4]string{"total.json", "first.json", "second.json", "third.json"}
+
+	for _, v := range pathes {
+		tpath := recordsPath + "/" + v
+		if r, _ := exists(tpath); r {
+			result := &GameRank{}
+			b, _ := ioutil.ReadFile(tpath)
+			err := json.Unmarshal(b, result)
+			if err != nil {
+				log.Println("err read rank.")
+				return
+			} else if v == "total.json" {
+				ret.Total = result.Sorted
+			} else if v == "first.json" {
+				ret.First = result.Sorted
+			} else if v == "second.json" {
+				ret.Second = result.Sorted
+			} else if v == "third.json" {
+				ret.Third = result.Sorted
+			}
+		}
+	}
+
+	if ret.First == nil {
+		ret.First = records.Sorted
+	} else if ret.Second == nil {
+		ret.Second = records.Sorted
+	} else if ret.Third == nil {
+		ret.Third = records.Sorted
+	}
+
+	ret.Gid = g_game.GameID
+
+	bt, err := json.Marshal(ret)
+	if err != nil {
+		log.Println("err marsh json rank.")
+		return
+	} else {
+		_, _ = w.Write(bt)
+	}
+}
+
 var records *GameRank
 var recordsPath string
+var g_game *Game
 
 func main() {
 	recordsPath = "records"
@@ -432,6 +503,8 @@ func main() {
 
 	flag.Parse()
 	log.SetFlags(0)
+	http.HandleFunc("/game", gameHandler)
+	http.HandleFunc("/rank", rankHandler)
 	http.HandleFunc("/", home)
 	http.HandleFunc("/ws", echo)
 	// http.HandleFunc("/", home)
