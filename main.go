@@ -147,7 +147,8 @@ type Tile struct {
 }
 
 const (
-	MapSize = 3
+	MapWidth  = 3
+	MapHeight = 4
 )
 
 type Game struct {
@@ -158,7 +159,7 @@ type Game struct {
 	Wid     int
 	Hei     int
 
-	Tilemap [MapSize][MapSize]*Tile
+	Tilemap [MapHeight][MapWidth]*Tile
 
 	roundRecords []string
 }
@@ -168,20 +169,19 @@ func initGame(g *Game) {
 	g.RoundID = 0
 	g.GameID = g.GameID + 1
 	g.roundRecords = make([]string, 0, 0)
-	g.Wid = MapSize
-	g.Hei = MapSize
-	size := MapSize
-	for i := 0; i < size; i++ {
-		for j := 0; j < size; j++ {
+	g.Wid = MapWidth
+	g.Hei = MapHeight
+	for i := 0; i < MapWidth; i++ {
+		for j := 0; j < MapHeight; j++ {
 			t := &Tile{Gold: 0}
 			t.Players = make(map[string]*Player, 0)
-			g.Tilemap[i][j] = t
+			g.Tilemap[j][i] = t
 		}
 	}
 
 	for token, v := range connections {
-		x := rand.Intn(MapSize)
-		y := rand.Intn(MapSize)
+		x := rand.Intn(MapWidth)
+		y := rand.Intn(MapHeight)
 		v.Info = &PlayerInfo{X: x, Y: y}
 		v.Info.Gold = 0
 		v.Info.Key = token
@@ -232,10 +232,9 @@ func CheckGameOver(g *Game) bool {
 }
 
 func ApplyGameLogic(g *Game) {
-	size := MapSize
-	for i := 0; i < size; i++ {
-		for j := 0; j < size; j++ {
-			t := g.Tilemap[i][j]
+	for i := 0; i < MapWidth; i++ {
+		for j := 0; j < MapHeight; j++ {
+			t := g.Tilemap[j][i]
 			if t.Gold > 0 && len(t.Players) > 0 {
 				tmp := make([]*Player, 0, 3)
 				for _, v := range t.Players {
@@ -252,12 +251,12 @@ func ApplyGameLogic(g *Game) {
 }
 
 func RandomGenGold(g *Game) {
-	n := MapSize - 1
+	n := MapWidth + MapHeight
 	for i := 0; i < n; i++ {
-		r := rand.Intn(MapSize)
+		r := rand.Intn(n)
 
-		x := rand.Intn(MapSize)
-		y := rand.Intn(MapSize)
+		x := rand.Intn(MapWidth)
+		y := rand.Intn(MapHeight)
 
 		t := g.Tilemap[y][x]
 		t.Gold += r
