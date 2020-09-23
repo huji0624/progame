@@ -1,0 +1,30 @@
+{
+  "GameID": 2,
+  "Msgtype": 3,
+  "RoundID": 0,
+  "Wid": 3,
+  "Hei": 3,
+  "Tilemap": [
+    [
+      { "Gold": 0, "Players": {} },
+      { "Gold": 0, "Players": {} },
+      { "Gold": 0, "Players": {} }
+    ],
+    [
+      { "Gold": 0, "Players": {} },
+      { "Gold": 1, "Players": {} },
+      { "Gold": 1, "Players": {} }
+    ],
+    [
+      { "Gold": 0, "Players": {} },
+      { "Gold": 0, "Players": {} },
+      {
+        "Gold": 0,
+        "Players": {
+          "101": { "Info": { "Key": "101", "X": 2, "Y": 2, "Gold": 0 } },
+          "202": { "Info": { "Key": "202", "X": 2, "Y": 2, "Gold": 0 } }
+        }
+      }
+    ]
+  ]
+}
