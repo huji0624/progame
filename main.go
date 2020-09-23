@@ -155,6 +155,8 @@ type Game struct {
 	Msgtype int
 	status  int //-1无效0准备1开始
 	RoundID int
+	Wid     int
+	Hei     int
 
 	Tilemap [MapSize][MapSize]*Tile
 
@@ -166,6 +168,8 @@ func initGame(g *Game) {
 	g.RoundID = 0
 	g.GameID = g.GameID + 1
 	g.roundRecords = make([]string, 0, 0)
+	g.Wid = MapSize
+	g.Hei = MapSize
 	size := MapSize
 	for i := 0; i < size; i++ {
 		for j := 0; j < size; j++ {
