@@ -422,6 +422,15 @@ type Rank struct {
 	Gid    uint64
 }
 
+func setupresponse(w http.ResponseWriter, req *http.Request) {
+	if origin := req.Header.Get("Origin"); origin != "" {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers",
+			"Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+	}
+}
+
 func exists(path string) (bool, error) {
 	_, err := os.Stat(path)
 	if err == nil {
@@ -434,6 +443,8 @@ func exists(path string) (bool, error) {
 }
 
 func gameHandler(w http.ResponseWriter, r *http.Request) {
+	setupresponse(w)
+
 	r.ParseForm()
 	gid := r.Form.Get("gid")
 
@@ -446,6 +457,7 @@ func gameHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func rankHandler(w http.ResponseWriter, r *http.Request) {
+	setupresponse(w)
 
 	ret := &Rank{}
 
