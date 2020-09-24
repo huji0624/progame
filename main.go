@@ -124,7 +124,7 @@ func KickPlayer(p *Player) {
 
 type Tile struct {
 	Gold    int
-	P       []*GameScore `json:"body,omitempty"`
+	P       []*GameScore `json:"Players,omitempty"`
 	players map[string]*Player
 }
 
@@ -228,7 +228,7 @@ func MovePlayer(g *Game, player *Player, x int, y int) {
 }
 
 func CheckGameOver(g *Game) bool {
-	if g.RoundID > 100 {
+	if g.RoundID > 10 {
 		return true
 	}
 

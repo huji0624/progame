@@ -2,6 +2,7 @@
   <div class="container">
     <el-page-header @back="$router.go(-1)" content="回放详情"> </el-page-header>
     <el-button @click="onPre()">Pre</el-button>
+    <span> Round {{ roundNo + 1 }} </span>
     <el-button @click="onNext()">Next</el-button>
 
     <div class="main" :style="{ width: mainW + 'px', height: mainH + 'px' }">
@@ -13,17 +14,12 @@
         v-for="(it, i) in total"
         :key="i"
       >
-        <div class="item">
-          {{ it.gold }}
+        <div class="gold">{{ it.gold }}</div>
+        <div v-if="it.players">
+          <div class="item" v-for="(it, i) in it.players" :key="i">
+            {{ it.Name }} - {{ it.Gold }}
+          </div>
         </div>
-        <!-- <div class="item"></div>
-        <div class="item"></div>
-        <div class="item"></div>
-        <div class="item"></div>
-        <div class="item"></div>
-        <div class="item"></div>
-        <div class="item"></div>
-        <div class="item"></div> -->
       </div>
     </div>
     <div class="popover">
@@ -61,7 +57,6 @@ export default {
   },
   watch: {
     roundNo(n) {
-      console.log(n);
       this.start();
     },
   },
@@ -87,9 +82,11 @@ export default {
         alert('播放已结束');
         return false;
       }
+
       const round = allRound[roundNo],
-        tilemap = round.Tilemap;
-      const afterArr = [];
+        tilemap = round.Tilemap,
+        afterArr = [];
+
       for (let i = 0; i < y; i++) {
         for (let j = 0; j < x; j++) {
           const it = tilemap[i][j];
@@ -102,7 +99,7 @@ export default {
         }
       }
       this.total = afterArr;
-      roundNo++;
+
       console.log(round);
     },
 
@@ -113,7 +110,7 @@ export default {
       this.playersInfo = [];
     },
     onNext() {
-      this.roundNo++;
+      if (this.roundNo < this.allRound.length - 1) this.roundNo++;
     },
     onPre() {
       if (this.roundNo > 0) this.roundNo--;
@@ -167,19 +164,35 @@ export default {
       user-select: none;
       background: #dedede;
       transition: all 0.2s;
+      font-size: 14px;
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
       align-items: center;
       .item {
-        width: 25px;
+        width: 85px;
         height: 25px;
-        border-radius: 50%;
-        // border: 1px solid #aaa;
+        line-height: 23px;
+        border: 1px solid #5764ff;
         margin: 3px;
+        border-radius: 15px;
+        z-index: 99;
+      }
+      .gold {
+        width: 100px;
+        height: 100px;
+        position: absolute;
+        top: 0;
+        left: 0;
+        color: #ccc;
+        padding-top: 10px;
+        font-size: 60px;
+        font-style: italic;
+        z-index: 1;
+        opacity: 0.5;
       }
     }
-    :hover {
+    .items:hover {
       background: #eee;
     }
   }
