@@ -443,20 +443,6 @@ type GameRank struct {
 	Scores map[string]int
 }
 
-func home(w http.ResponseWriter, r *http.Request) {
-
-	out := ""
-
-	bt, err := json.Marshal(records)
-	if err != nil {
-		out = "error"
-	} else {
-		out = string(bt)
-	}
-
-	_, _ = w.Write([]byte(out))
-}
-
 type Rank struct {
 	Total  []*GameScore
 	First  []*GameScore
@@ -496,6 +482,40 @@ func gameHandler(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write(bt)
 	} else {
 		_, _ = w.Write([]byte("no such game."))
+	}
+}
+
+func saveHandler(w http.ResponseWriter, r *http.Request) {
+	setupresponse(w, r)
+
+	var err string
+
+	r.ParseForm()
+	token := r.Form.Get("token")
+	name := r.Form.Get("name")
+	switch name {
+	case "total":
+	case "first":
+	case "second":
+	case "third":
+	default:
+		err = "params err"
+	}
+	if token != "iaijmnxuahiqooqjs" {
+		err = "token fail."
+	}
+	if err != "" {
+		_, _ = w.Write([]byte(err))
+		return
+	}
+
+	bt, _ := json.Marshal(records)
+	reterr := ioutil.WriteFile(recordsPath+"/"+name+".json", bt, 0644)
+
+	if reterr != nil {
+		_, _ = w.Write([]byte(reterr.Error()))
+	} else {
+		_, _ = w.Write([]byte(name + " DONE"))
 	}
 }
 
@@ -562,9 +582,11 @@ func main() {
 
 	flag.Parse()
 	log.SetFlags(0)
+	http.HandleFunc("/save", saveHandler)
 	http.HandleFunc("/game", gameHandler)
 	http.HandleFunc("/rank", rankHandler)
-	http.HandleFunc("/", home)
+	http.Handle("/", http.FileServer(http.Dir("./records")))
+	// http.HandleFunc("/", home)
 	http.HandleFunc("/ws", echo)
 	// http.HandleFunc("/", home)
 	log.Println("ws server ready...")
