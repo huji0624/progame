@@ -38,7 +38,7 @@
                   }else if(jmsg.Msgtype==3){
                     let x = Math.floor(Math.random()*3)
                     let y = Math.floor(Math.random()*3)
-                    ws.send(JSON.stringify({msgtype:4,token:value,x:x,y:y}));
+                    ws.send(JSON.stringify({msgtype:4,token:value,x:x,y:y,RoundID:jmsg.RoundID}));
                   }
                };
                 
@@ -48,6 +48,7 @@
                   console.log("连接已关闭..."); 
                   
                   // setTimeout(WebSocketTest(),1000)
+                  WebSocketTest()
                };
             }
             

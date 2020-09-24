@@ -115,25 +115,6 @@ func echo(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func ReadLoop(p *Player, token string) {
-	for {
-		if p.playing {
-			outtime := time.Now().Add(1 * time.Second)
-			p.c.SetReadDeadline(outtime)
-		}
-
-		jmsg := Msg{}
-		err := p.c.ReadJSON(&jmsg)
-		if err == nil {
-			p.rc <- &jmsg
-		} else {
-			log.Println("read token:", token, " err:", err)
-			KickPlayer(p)
-			break
-		}
-	}
-}
-
 func KickPlayer(p *Player) {
 	p.c.Close()
 	delete(connections, p.token)
@@ -187,6 +168,8 @@ func initGame(g *Game) {
 		v.Info.Key = token
 
 		MovePlayer(g, v, x, y)
+
+		v.playing = true
 	}
 }
 
@@ -212,6 +195,11 @@ func pubGameMap(g *Game) []byte {
 func MovePlayer(g *Game, player *Player, x int, y int) {
 	info := player.Info
 
+	if player.playing && x == info.X && y == info.Y {
+		log.Println("Player not moving!", player.token)
+		return
+	}
+
 	t := g.Tilemap[info.Y][info.X]
 
 	info.X = x
@@ -224,7 +212,7 @@ func MovePlayer(g *Game, player *Player, x int, y int) {
 }
 
 func CheckGameOver(g *Game) bool {
-	if g.RoundID > 20 {
+	if g.RoundID > 100 {
 		return true
 	}
 
@@ -263,6 +251,27 @@ func RandomGenGold(g *Game) {
 	}
 }
 
+func ReadLoop(p *Player, token string) {
+	for {
+		// if p.playing {
+		// 	outtime := time.Now().Add(1 * time.Second)
+		// 	p.c.SetReadDeadline(outtime)
+		// }
+
+		jmsg := Msg{}
+		err := p.c.ReadJSON(&jmsg)
+		// log.Println("read loop:")
+		LogStruct(jmsg)
+		if err == nil {
+			p.rc <- &jmsg
+		} else {
+			log.Println("read token:", token, " err:", err, " player will not move.")
+			KickPlayer(p)
+			break
+		}
+	}
+}
+
 func PlayGameRounds(game *Game) {
 	initGame(game)
 	for {
@@ -277,17 +286,34 @@ func PlayGameRounds(game *Game) {
 		gmsg := pubGameMap(game)
 		game.roundRecords = append(game.roundRecords, string(gmsg))
 
-		time.Sleep(time.Second / 4)
+		time.Sleep(time.Second / 2)
 
 		//wait for move
-		for token, v := range connections {
-			msg, ok := <-v.rc
-			if ok && msg.Msgtype == 4 {
+		for _, v := range connections {
+			var msg *Msg
+			for {
+				conti := false
+				select {
+				case msg = <-v.rc:
+					if msg.RoundID == game.RoundID {
+						conti = false
+					} else {
+						conti = true
+					}
+				default:
+					msg = &Msg{}
+					msg.Msgtype = -1
+					conti = false
+				}
+				if !conti {
+					break
+				}
+			}
 
-				log.Println("player is moving:", token)
-				LogStruct(msg)
-
+			if msg.Msgtype == 4 {
 				MovePlayer(game, v, msg.X, msg.Y)
+			} else if msg.Msgtype == -1 {
+				MovePlayer(game, v, v.Info.X, v.Info.Y)
 			} else {
 				KickPlayer(v)
 			}
@@ -333,6 +359,7 @@ func GameLoop() {
 		jmsg := Msg{}
 		jmsg.Msgtype = 1
 		for _, v := range prepares {
+			jmsg.Token = v.token
 			WriteToClient(v.c, jmsg)
 		}
 
@@ -346,7 +373,7 @@ func GameLoop() {
 			msg, ok := <-v.rc
 			if ok && msg.Msgtype == 2 {
 				log.Println("player is ready:", token)
-				v.playing = true
+
 				connections[v.token] = v
 			} else {
 				KickPlayer(v)
@@ -364,6 +391,7 @@ func GameLoop() {
 
 func SaveGameResult(g *Game) {
 	for _, p := range connections {
+		p.playing = false
 		records.Scores[p.Info.Key] = records.Scores[p.Info.Key] + p.Info.Gold
 	}
 
