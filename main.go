@@ -56,7 +56,7 @@ var connections = make(map[string]*Player)
 var prepares = make(map[string]*Player)
 
 func LogStruct(v interface{}) {
-	bt, err := json.Marshal(v)
+	bt, err := json.MarshalIndent(v, "", "\t")
 	if err == nil {
 		LogDebug(string(bt))
 	}
@@ -172,7 +172,6 @@ func initGame(g *Game) {
 }
 
 func PublicToClientData(data []byte) {
-	LogDebug("will pub data:", string(data))
 	for _, v := range connections {
 		WriteToClientData(v.c, data)
 	}
@@ -194,6 +193,9 @@ func pubGameMap(g *Game) []byte {
 			}
 		}
 	}
+
+	LogDebug("will pub data:")
+	LogStruct(g)
 
 	jmsg, err := json.Marshal(g)
 	if err != nil {
