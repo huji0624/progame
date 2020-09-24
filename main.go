@@ -128,8 +128,8 @@ type Tile struct {
 }
 
 const (
-	MapWidth  = 3
-	MapHeight = 4
+	MapWidth  = 10
+	MapHeight = 8
 )
 
 type Game struct {
@@ -213,7 +213,6 @@ func MovePlayer(g *Game, player *Player, x int, y int) {
 	if x == info.X && y == info.Y {
 		log.Println(player.Info)
 		log.Println("Player not moving!", player.token, x, ",", y)
-		return
 	}
 
 	t := g.Tilemap[info.Y][info.X]
@@ -584,7 +583,7 @@ func main() {
 	http.HandleFunc("/save", saveHandler)
 	http.HandleFunc("/game", gameHandler)
 	http.HandleFunc("/rank", rankHandler)
-	http.Handle("/", http.FileServer(http.Dir("./records")))
+	http.Handle("/", http.FileServer(http.Dir("./web/dist")))
 	// http.HandleFunc("/", home)
 	http.HandleFunc("/ws", echo)
 	// http.HandleFunc("/", home)
