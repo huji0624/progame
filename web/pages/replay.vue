@@ -1,22 +1,24 @@
 <template>
   <div class="container">
     <el-page-header @back="$router.go(-1)" content="回放详情"> </el-page-header>
-    <el-button @click="onPre()">Pre</el-button>
-    <span> Round {{ roundNo + 1 }} </span>
-    <el-button @click="onNext()">Next</el-button>
+    <el-button @click="onPre()">上一轮</el-button>
+    <span> 第 {{ roundNo + 1 }} 轮</span>
+    <el-button @click="onNext()">下一轮</el-button>
+    <el-button @click="onAutoPlay()">
+      {{ loopId ? '停止播放' : '自动播放' }}
+    </el-button>
 
     <div class="main" :style="{ width: mainW + 'px', height: mainH + 'px' }">
       <div
         @mouseover="mouseOver(it)"
         @mouseleave="mouseLeave()"
-        @click="onClick(it)"
         class="items"
         v-for="(it, i) in total"
         :key="i"
       >
         <div class="gold">{{ it.gold }}</div>
         <div v-if="it.players">
-          <div class="item" v-for="(it, i) in it.players" :key="i">
+          <div class="item" v-for="(it, i) in it.players" :key="i" v-if="i < 3">
             {{ it.Name }} - {{ it.Gold }}
           </div>
         </div>
@@ -26,12 +28,12 @@
       <el-popover
         placement="top-start"
         title="玩家信息"
-        width="250"
+        width="270"
         v-model="popShow"
       >
         <div v-for="(it, i) in playersInfo" :key="i">
-          <span>团队名：{{ it.Name }}</span>
-          <span>金币数：{{ it.Gold }}</span>
+          {{ i + 1 }}、团队名：<span class="name">{{ it.Name }}</span>
+          金币数：<span class="gold">{{ it.Gold }}</span>
         </div>
       </el-popover>
     </div>
@@ -49,6 +51,7 @@ export default {
   data() {
     return {
       roundNo: 0,
+      loopId: 0,
       popShow: true,
       playersInfo: [],
       players: [],
@@ -107,7 +110,7 @@ export default {
       this.playersInfo = it.players || [];
     },
     mouseLeave() {
-      this.playersInfo = [];
+      // this.playersInfo = [];
     },
     onNext() {
       if (this.roundNo < this.allRound.length - 1) this.roundNo++;
@@ -115,23 +118,26 @@ export default {
     onPre() {
       if (this.roundNo > 0) this.roundNo--;
     },
-    onClick(it) {
-      alert(it.pos);
+    onAutoPlay() {
+      if (!_this.loopId)
+        _this.loopId = setInterval(() => {
+          _this.onNext();
+        }, 3000);
+      else _this.onStop();
     },
-
-    /**
-     * 根据坐标计算索引
-     * @param {array}
-     * @return {number}
-     */
-    calcIdx([a, b]) {
-      const row = this.boardSize[0];
-      return b * row + a;
+    onStop() {
+      clearInterval(_this.loopId);
+      _this.loopId = 0;
     },
   },
   created() {
     _this = this;
-    this.start();
+    _this.start();
+  },
+  beforeDestroy() {
+    _this.$once('hook:beforeDestroy', () => {
+      _this.onStop();
+    });
   },
 };
 </script>
@@ -173,7 +179,7 @@ export default {
         width: 85px;
         height: 25px;
         line-height: 23px;
-        border: 1px solid #5764ff;
+        border: 1px solid red;
         margin: 3px;
         border-radius: 15px;
         z-index: 99;
@@ -200,6 +206,15 @@ export default {
     position: absolute;
     top: 80px;
     left: 20px;
+    .name {
+      font-weight: bold;
+      width: 150px;
+      color: #303133;
+    }
+    .gold {
+      font-weight: bold;
+      color: #929a19;
+    }
   }
 }
 </style>

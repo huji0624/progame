@@ -13,34 +13,9 @@
                 <el-col :span="8"> 得分 </el-col>
               </el-row>
             </div>
-            <el-row class="row" v-for="(it, i) in All[item.name]" :key="i">
-              <el-col :span="8">
-                <div :class="i < 3 ? 'no' : ''">{{ i + 1 }}</div>
-              </el-col>
-              <el-col :span="8">
-                {{ it.Name }}
-              </el-col>
-              <el-col :span="8">
-                {{ it.Gold }}
-              </el-col>
-            </el-row>
-          </el-row>
-        </el-col>
-      </el-row>
-
-      <!-- <el-tabs class="tabs" v-model="activeName">
-        <el-tab-pane v-for="(it, i) in tabs" :key="i" :label="it.label">
-          <div>
-            <div class="title">
-              <el-row class="row">
-                <el-col :span="8"> 名次 </el-col>
-                <el-col :span="8"> 队名 </el-col>
-                <el-col :span="8"> 得分 </el-col>
-              </el-row>
-            </div>
-            <div v-if="!All[it.name]">比赛还未开始</div>
-            <div v-else class="rows" v-for="(it, i) in All[it.name]" :key="i">
-              <el-row class="row">
+            <div v-if="!All[item.name]" class="notstart">敬请期待</div>
+            <div v-else class="row">
+              <el-row class="item" v-for="(it, i) in All[item.name]" :key="i">
                 <el-col :span="8">
                   <div :class="i < 3 ? 'no' : ''">{{ i + 1 }}</div>
                 </el-col>
@@ -52,14 +27,15 @@
                 </el-col>
               </el-row>
             </div>
-          </div>
-        </el-tab-pane>
-      </el-tabs> -->
+          </el-row>
+        </el-col>
+      </el-row>
     </div>
     <div class="replay">
       <div class="title">点击按钮查看当局回放 <span>仅展示最近40局</span></div>
       <div class="btns">
         <el-button
+          v-if="Gid - i - 1 > 0"
           class="btn"
           @click="$router.push('/replay?gid=' + (Gid - i - 1))"
           v-for="(item, i) in 40"
@@ -82,8 +58,6 @@ export default {
   },
   data() {
     return {
-      activeName: '',
-
       tabs: [
         { label: '第一次排名', name: 'First' },
         { label: '第二次排名', name: 'Second' },
@@ -94,17 +68,14 @@ export default {
   },
   async asyncData({ app, params, store }) {
     let res = await app.$axios.get('rank');
-    const All = res;
-    const { Gid } = res;
-
+    const All = res,
+      { Gid } = res;
     return { Gid, All };
   },
   mounted() {},
   methods: {
-    async init() {
-      // let res = await this.$axios.get('rank');
-    },
-    onClick() {
+    onSort() {
+      //排序，已废弃
       this.record.sort(compare('coin'));
     },
   },
@@ -158,13 +129,22 @@ let compare = function (prop) {
     }
     .rows {
       color: #000;
+
       background: #d3dce6;
       margin: 3px;
-      height: 500px;
+
+      .notstart {
+        padding-top: 50px;
+      }
       .row {
-        margin: 3px;
-        line-height: 70px;
-        background: #e5e9f2;
+        font-size: 18px;
+        height: 500px;
+        overflow: hidden auto;
+        line-height: 60px;
+        .item {
+          margin: 3px;
+          background: #e5e9f2;
+        }
         .no {
           background: red;
         }
@@ -180,7 +160,7 @@ let compare = function (prop) {
       font-size: 18px;
       color: #656464;
       text-align: left;
-      margin-left: 5px;
+      margin-left: 10px;
       span {
         font-size: 13px;
       }
@@ -194,5 +174,8 @@ let compare = function (prop) {
       }
     }
   }
+}
+::-webkit-scrollbar {
+  width: 0 !important;
 }
 </style>
