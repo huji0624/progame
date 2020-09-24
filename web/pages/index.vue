@@ -1,10 +1,34 @@
 <template>
   <section class="main">
     <div class="head">排行榜</div>
-    <el-button @click="onClick">排序</el-button>
-    <el-button @click="$router.push('/replay?gid=2')">回放</el-button>
     <div class="list">
-      <el-tabs class="tabs" v-model="activeName">
+      <el-row class="rows">
+        <el-col :span="6" v-for="(item, i) in tabs" :key="i">
+          <span class="name"> {{ item.label }}</span>
+          <el-row>
+            <div class="title">
+              <el-row>
+                <el-col :span="8"> 名次 </el-col>
+                <el-col :span="8"> 队名 </el-col>
+                <el-col :span="8"> 得分 </el-col>
+              </el-row>
+            </div>
+            <el-row class="row" v-for="(it, i) in All[item.name]" :key="i">
+              <el-col :span="8">
+                <div :class="i < 3 ? 'no' : ''">{{ i + 1 }}</div>
+              </el-col>
+              <el-col :span="8">
+                {{ it.Name }}
+              </el-col>
+              <el-col :span="8">
+                {{ it.Gold }}
+              </el-col>
+            </el-row>
+          </el-row>
+        </el-col>
+      </el-row>
+
+      <!-- <el-tabs class="tabs" v-model="activeName">
         <el-tab-pane v-for="(it, i) in tabs" :key="i" :label="it.label">
           <div>
             <div class="title">
@@ -30,7 +54,20 @@
             </div>
           </div>
         </el-tab-pane>
-      </el-tabs>
+      </el-tabs> -->
+    </div>
+    <div class="replay">
+      <div class="title">点击按钮查看当局回放 <span>仅展示最近40局</span></div>
+      <div class="btns">
+        <el-button
+          class="btn"
+          @click="$router.push('/replay?gid=' + (Gid - i - 1))"
+          v-for="(item, i) in 40"
+          :key="i"
+        >
+          第{{ Gid - i - 1 }}局
+        </el-button>
+      </div>
     </div>
   </section>
 </template>
@@ -100,33 +137,60 @@ let compare = function (prop) {
   margin: 0 auto;
   text-align: center;
   padding: 10px;
+  font-size: 14px;
   .head {
-    padding: 20px;
+    padding: 10px;
+    font-size: 20px;
   }
   .list {
-    padding: 30px 100px;
-    .tabs {
-      text-align: center;
+    padding: 20px 100px;
+    font-size: 16px;
+    .name {
+      font-size: 20px;
+      line-height: 48px;
+    }
 
-      .title {
-        background: #99a9bf;
-        color: #fff;
-        line-height: 78px;
+    .title {
+      background: #99a9bf;
+      color: #fff;
+      line-height: 58px;
+      margin: 3px;
+    }
+    .rows {
+      color: #000;
+      background: #d3dce6;
+      margin: 3px;
+      height: 500px;
+      .row {
         margin: 3px;
-      }
-      .rows {
-        color: #000;
-        background: #d3dce6;
-        margin: 3px;
-        .row {
-          line-height: 70px;
-          .no {
-            background: red;
-          }
+        line-height: 70px;
+        background: #e5e9f2;
+        .no {
+          background: red;
         }
       }
-      .rows:hover {
-        background: #e5e9f2;
+    }
+  }
+  .replay {
+    margin: 10px 100px;
+    padding: 10px;
+    background: #d3dce6;
+    .title {
+      line-height: 50px;
+      font-size: 18px;
+      color: #656464;
+      text-align: left;
+      margin-left: 5px;
+      span {
+        font-size: 13px;
+      }
+    }
+    .btns {
+      text-align: left;
+
+      .btn {
+        width: 100px;
+        margin: 5px 10px;
       }
     }
   }

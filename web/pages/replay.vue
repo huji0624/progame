@@ -26,7 +26,7 @@
       <el-popover
         placement="top-start"
         title="玩家信息"
-        width="100%"
+        width="250"
         v-model="popShow"
       >
         <div v-for="(it, i) in playersInfo" :key="i">
@@ -189,12 +189,17 @@ export default {
         font-size: 60px;
         font-style: italic;
         z-index: 1;
-        opacity: 0.5;
+        opacity: 0.8;
       }
     }
     .items:hover {
       background: #eee;
     }
+  }
+  .popover {
+    position: absolute;
+    top: 80px;
+    left: 20px;
   }
 }
 </style>
