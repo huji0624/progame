@@ -123,7 +123,7 @@ func KickPlayer(p *Player) {
 
 type Tile struct {
 	Gold    int
-	P       []*GameScore `json:"body,omitempty"`
+	P       []*GameScore `json:"Players,omitempty"`
 	players map[string]*Player
 }
 
