@@ -1,8 +1,8 @@
 <template>
   <section class="main">
     <div class="head">排行榜</div>
-    <el-button @click="onClick">排序</el-button
-    ><el-button @click="$router.push('/replay?gid=2')">回放</el-button>
+    <el-button @click="onClick">排序</el-button>
+    <el-button @click="$router.push('/replay?gid=2')">回放</el-button>
     <div class="list">
       <el-tabs class="tabs" v-model="activeName">
         <el-tab-pane v-for="(it, i) in tabs" :key="i" :label="it.label">
