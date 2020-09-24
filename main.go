@@ -124,7 +124,8 @@ func KickPlayer(p *Player) {
 
 type Tile struct {
 	Gold    int
-	Players map[string]*Player
+	P       []*GameScore `json:"body,omitempty"`
+	players map[string]*Player
 }
 
 const (
@@ -155,7 +156,7 @@ func initGame(g *Game) {
 	for i := 0; i < MapWidth; i++ {
 		for j := 0; j < MapHeight; j++ {
 			t := &Tile{Gold: 0}
-			t.Players = make(map[string]*Player, 0)
+			t.players = make(map[string]*Player, 0)
 			g.Tilemap[j][i] = t
 		}
 	}
@@ -181,6 +182,21 @@ func PublicToClientData(data []byte) {
 }
 
 func pubGameMap(g *Game) []byte {
+	for i := 0; i < MapWidth; i++ {
+		for j := 0; j < MapHeight; j++ {
+			t := g.Tilemap[j][i]
+			if len(t.players) > 0 {
+				tmp := make([]*GameScore, 0, 3)
+				for _, v := range t.players {
+					tmp = append(tmp, &GameScore{Name: v.Info.Key, Gold: v.Info.Gold})
+				}
+
+				t.P = tmp
+			} else {
+				t.P = nil
+			}
+		}
+	}
 
 	jmsg, err := json.Marshal(g)
 	if err != nil {
@@ -207,8 +223,8 @@ func MovePlayer(g *Game, player *Player, x int, y int) {
 
 	tt := g.Tilemap[info.Y][info.X]
 
-	delete(t.Players, player.Info.Key)
-	tt.Players[info.Key] = player
+	delete(t.players, player.Info.Key)
+	tt.players[info.Key] = player
 }
 
 func CheckGameOver(g *Game) bool {
@@ -223,9 +239,9 @@ func ApplyGameLogic(g *Game) {
 	for i := 0; i < MapWidth; i++ {
 		for j := 0; j < MapHeight; j++ {
 			t := g.Tilemap[j][i]
-			if t.Gold > 0 && len(t.Players) > 0 {
+			if t.Gold > 0 && len(t.players) > 0 {
 				tmp := make([]*Player, 0, 3)
-				for _, v := range t.Players {
+				for _, v := range t.players {
 					tmp = append(tmp, v)
 				}
 
