@@ -46,9 +46,8 @@ type Player struct {
 	c  *websocket.Conn
 	rc chan *Msg
 
-	playing bool
-	token   string
-	Info    *PlayerInfo
+	token string
+	Info  *PlayerInfo
 }
 
 var upgrader = websocket.Upgrader{CheckOrigin: WhateverOrigin} // use default options
@@ -64,8 +63,8 @@ func LogStruct(v interface{}) {
 }
 
 func WriteToClient(c *websocket.Conn, v interface{}) {
-	log.Println("will write data:")
-	LogStruct(v)
+	// log.Println("will write data:")
+	// LogStruct(v)
 	c.WriteJSON(v)
 }
 
@@ -74,8 +73,8 @@ func WriteToClientData(c *websocket.Conn, data []byte) {
 	if err != nil {
 		log.Println("write err:", err)
 	} else {
-		LogDebug("write data:")
-		LogStruct(string(data))
+		// LogDebug("write data:")
+		// LogStruct(string(data))
 	}
 }
 
@@ -169,8 +168,6 @@ func initGame(g *Game) {
 		v.Info.Key = token
 
 		MovePlayer(g, v, x, y)
-
-		v.playing = true
 	}
 }
 
@@ -211,8 +208,9 @@ func pubGameMap(g *Game) []byte {
 func MovePlayer(g *Game, player *Player, x int, y int) {
 	info := player.Info
 
-	if player.playing && x == info.X && y == info.Y {
-		log.Println("Player not moving!", player.token)
+	if x == info.X && y == info.Y {
+		log.Println(player.Info)
+		log.Println("Player not moving!", player.token, x, ",", y)
 		return
 	}
 
@@ -407,7 +405,6 @@ func GameLoop() {
 
 func SaveGameResult(g *Game) {
 	for _, p := range connections {
-		p.playing = false
 		records.Scores[p.Info.Key] = records.Scores[p.Info.Key] + p.Info.Gold
 	}
 
