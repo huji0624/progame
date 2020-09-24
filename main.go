@@ -129,7 +129,7 @@ type Tile struct {
 
 const (
 	MapWidth  = 10
-	MapHeight = 8
+	MapHeight = 6
 )
 
 type Game struct {
@@ -167,7 +167,7 @@ func initGame(g *Game) {
 		v.Info.Gold = 0
 		v.Info.Key = token
 
-		MovePlayer(g, v, x, y)
+		MovePlayerForce(g, v, x, y)
 	}
 }
 
@@ -194,8 +194,8 @@ func pubGameMap(g *Game) []byte {
 		}
 	}
 
-	LogDebug("will pub data:")
-	LogStruct(g)
+	// LogDebug("will pub data:")
+	// LogStruct(g)
 
 	jmsg, err := json.Marshal(g)
 	if err != nil {
@@ -207,13 +207,24 @@ func pubGameMap(g *Game) []byte {
 	return jmsg
 }
 
-func MovePlayer(g *Game, player *Player, x int, y int) {
-	info := player.Info
-
-	if x == info.X && y == info.Y {
-		log.Println(player.Info)
-		log.Println("Player not moving!", player.token, x, ",", y)
+func AbsI(n int) int {
+	if n < 0 {
+		return -n
+	} else {
+		return n
 	}
+}
+
+func MaxI(n int, m int) int {
+	if n < m {
+		return m
+	} else {
+		return n
+	}
+}
+
+func MovePlayerForce(g *Game, player *Player, x int, y int) {
+	info := player.Info
 
 	t := g.Tilemap[info.Y][info.X]
 
@@ -226,8 +237,28 @@ func MovePlayer(g *Game, player *Player, x int, y int) {
 	tt.players[info.Key] = player
 }
 
+func MovePlayer(g *Game, player *Player, x int, y int) {
+	info := player.Info
+
+	//player move cost gold.And get one gold if not move.
+	step := AbsI(x-info.X) + AbsI(y-info.Y)
+	if step == 0 {
+		log.Println("Player not moving!", player.token, x, ",", y)
+		player.Info.Gold++
+		return
+	} else if step < info.Gold {
+		player.Info.Gold = player.Info.Gold - step
+	} else {
+		player.Info.Gold++
+		log.Println("Gold not enough!", player.token)
+		return
+	}
+
+	MovePlayerForce(g, player, x, y)
+}
+
 func CheckGameOver(g *Game) bool {
-	if g.RoundID > 10 {
+	if g.RoundID == 20 {
 		return true
 	}
 
@@ -254,9 +285,9 @@ func ApplyGameLogic(g *Game) {
 }
 
 func RandomGenGold(g *Game) {
-	n := MapWidth + MapHeight
+	n := len(connections)
 	for i := 0; i < n; i++ {
-		r := rand.Intn(n)
+		r := rand.Intn(MapWidth + MapHeight)
 
 		x := rand.Intn(MapWidth)
 		y := rand.Intn(MapHeight)
