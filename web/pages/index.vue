@@ -1,25 +1,38 @@
 <template>
-  <div class="container">
-    <div class="btns">
-      <el-input
-        class="btn"
-        v-model="column"
-        placeholder="请输入列数"
-      ></el-input>
-
-      <el-input class="btn" v-model="rows" placeholder="请输入行数"></el-input>
-
-      <el-button @click="onChange">确定</el-button>
+  <section class="main">
+    <div class="head">排行榜</div>
+    <el-button @click="onClick">排序</el-button
+    ><el-button @click="$router.push('/replay?gid=2')">回放</el-button>
+    <div class="list">
+      <el-tabs class="tabs" v-model="activeName">
+        <el-tab-pane v-for="(it, i) in tabs" :key="i" :label="it.label">
+          <div>
+            <div class="title">
+              <el-row class="row">
+                <el-col :span="8"> 名次 </el-col>
+                <el-col :span="8"> 队名 </el-col>
+                <el-col :span="8"> 得分 </el-col>
+              </el-row>
+            </div>
+            <div v-if="!All[it.name]">比赛还未开始</div>
+            <div v-else class="rows" v-for="(it, i) in All[it.name]" :key="i">
+              <el-row class="row">
+                <el-col :span="8">
+                  <div :class="i < 3 ? 'no' : ''">{{ i + 1 }}</div>
+                </el-col>
+                <el-col :span="8">
+                  {{ it.Name }}
+                </el-col>
+                <el-col :span="8">
+                  {{ it.Gold }}
+                </el-col>
+              </el-row>
+            </div>
+          </div>
+        </el-tab-pane>
+      </el-tabs>
     </div>
-    <div class="main" :style="{ width: mainW + 'px', height: mainH + 'px' }">
-      <div
-        @click="onClick(it)"
-        class="item"
-        v-for="(it, i) in total"
-        :key="i"
-      ></div>
-    </div>
-  </div>
+  </section>
 </template>
 
 <script>
@@ -27,84 +40,94 @@ let _this;
 export default {
   head() {
     return {
-      title: '程序员节日活动',
+      title: '金币作战排行榜',
     };
   },
   data() {
     return {
-      column: 5, //列
-      rows: 5, //行
-      mainW: '',
-      mainH: '',
-      total: 25,
+      activeName: '',
+
+      tabs: [
+        { label: '第一次排名', name: 'First' },
+        { label: '第二次排名', name: 'Second' },
+        { label: '第三次排名', name: 'Third' },
+        { label: '总排名', name: 'Total' },
+      ],
     };
   },
+  async asyncData({ app, params, store }) {
+    let res = await app.$axios.get('rank');
+    const All = res;
+    const { Gid } = res;
+
+    return { Gid, All };
+  },
+  mounted() {},
   methods: {
-    init() {
-      _this.onChange();
-      const afterArr = [];
-      let y = _this.column;
-      let x = _this.rows;
-      for (let i = 0; i < y; i++) {
-        for (let j = 0; j < x; j++) {
-          const item = {
-            type: 'init', //设置初始属性
-            isCheck: false, //是否点击过
-            pos: [j, i], //格子的坐标
-            isRepeat: 'not', //是否递归过
-            isTip: false, //用户点击数字时的提示
-            isFlag: false, //用户是否插了旗子
-          };
-          afterArr.push(item);
-        }
-      }
-      _this.total = afterArr;
+    async init() {
+      // let res = await this.$axios.get('rank');
     },
-    onChange() {
-      _this.mainW = _this.column * 100 + 2;
-      _this.mainH = _this.rows * 100 + 2;
-      _this.total = _this.column * _this.rows;
-    },
-    onClick(it) {
-      alert(it.pos);
+    onClick() {
+      this.record.sort(compare('coin'));
     },
   },
   created() {
     _this = this;
-    _this.init();
   },
+};
+
+let compare = function (prop) {
+  return function (obj1, obj2) {
+    var val1 = obj1[prop];
+    var val2 = obj2[prop];
+    if (!isNaN(Number(val1)) && !isNaN(Number(val2))) {
+      val1 = Number(val1);
+      val2 = Number(val2);
+    }
+    if (val1 < val2) {
+      return 1;
+    } else if (val1 > val2) {
+      return -1;
+    } else {
+      return 0;
+    }
+  };
 };
 </script>
 
 <style lang="less" scoped>
-.container {
+.main {
   margin: 0 auto;
-  min-height: 100vh;
   text-align: center;
-  .btns {
-    margin: 50px;
-
-    .btn {
-      width: 20%;
-    }
+  padding: 10px;
+  .head {
+    padding: 20px;
   }
-  .main {
-    width: 702px;
-    background: cornsilk;
-    box-shadow: 0 0 #333333;
-    border: 1px solid #888;
-    margin: 10px auto;
-    .item {
-      width: 100px;
-      height: 100px;
-      border: 1px solid #eee;
-      float: left;
-      user-select: none;
-      background: #888;
-      transition: all 0.2s;
-    }
-    :hover {
-      background: #eee;
+  .list {
+    padding: 30px 100px;
+    .tabs {
+      text-align: center;
+
+      .title {
+        background: #99a9bf;
+        color: #fff;
+        line-height: 78px;
+        margin: 3px;
+      }
+      .rows {
+        color: #000;
+        background: #d3dce6;
+        margin: 3px;
+        .row {
+          line-height: 70px;
+          .no {
+            background: red;
+          }
+        }
+      }
+      .rows:hover {
+        background: #e5e9f2;
+      }
     }
   }
 }
