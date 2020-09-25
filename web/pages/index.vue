@@ -34,9 +34,9 @@
       </el-row>
     </div>
     <div class="replay">
-      <div class="title">点击按钮查看当局回放 <span>仅展示最近40局</span></div>
+      <div class="title">点击按钮查看当局回放 <span>仅展示最近42局</span></div>
       <div class="btns">
-        <span v-for="(item, i) in 40" :key="i">
+        <span v-for="(item, i) in 42" :key="i">
           <el-button
             v-if="Gid - i - 1 > 0"
             class="btn"
@@ -60,6 +60,9 @@ export default {
   },
   data() {
     return {
+      loopId: '',
+      All: {},
+      Gid: 0,
       tabs: [
         { label: '第一次排名', name: 'First' },
         { label: '第二次排名', name: 'Second' },
@@ -68,21 +71,36 @@ export default {
       ],
     };
   },
-  async asyncData({ app, params, store }) {
-    let res = await app.$axios.get('rank');
-    const All = res,
-      { Gid } = res;
-    return { Gid, All };
+  // async asyncData({ app, params, store }) {
+  //   let res = await app.$axios.get('rank');
+  //   const All = res,
+  //     { Gid } = res;
+  //   return { Gid, All };
+  // },
+  mounted() {
+    _this.loopId = setInterval(() => {
+      _this.init();
+    }, 10000);
   },
-  mounted() {},
   methods: {
+    async init() {
+      let res = await _this.$axios.get('rank');
+      _this.All = res;
+      _this.Gid = res.Gid;
+    },
     onSort() {
       //排序，已废弃
-      this.record.sort(compare('coin'));
+      _this.record.sort(compare('coin'));
     },
   },
   created() {
     _this = this;
+    _this.init();
+  },
+  beforeDestroy() {
+    this.$once('hook:beforeDestroy', () => {
+      clearInterval(_this.loopId);
+    });
   },
 };
 
@@ -136,19 +154,27 @@ let compare = function (prop) {
       margin: 3px;
 
       .notstart {
-        padding-top: 50px;
+        padding-top: 150px;
+        color: #666;
       }
       .row {
-        font-size: 18px;
+        font-size: 16px;
         height: 500px;
         overflow: hidden auto;
         line-height: 60px;
+        margin: 3px;
+        background: #e1e2e2;
+
         .item {
           margin: 3px;
           background: #e5e9f2;
+          // box-shadow: 0px 2px 10px 0px rgba(198, 198, 198, 0.5);
         }
         .no {
-          background: red;
+          color: #fff;
+          border-radius: 5px;
+          background-color: #f56c6c;
+          border-color: #f56c6c;
         }
       }
     }
@@ -176,8 +202,5 @@ let compare = function (prop) {
       }
     }
   }
-}
-::-webkit-scrollbar {
-  width: 0 !important;
 }
 </style>

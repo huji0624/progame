@@ -8,6 +8,10 @@
   opacity: 0;
 }
 
+::-webkit-scrollbar {
+  width: 0 !important;
+}
+
 html {
   font-family: Helvetica;
   word-spacing: 1px;
