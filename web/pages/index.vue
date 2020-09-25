@@ -13,19 +13,21 @@
                 <el-col :span="8"> 得分 </el-col>
               </el-row>
             </div>
-            <div v-if="!All[item.name]" class="notstart">敬请期待</div>
-            <div v-else class="row">
-              <el-row class="item" v-for="(it, i) in All[item.name]" :key="i">
-                <el-col :span="8">
-                  <div :class="i < 3 ? 'no' : ''">{{ i + 1 }}</div>
-                </el-col>
-                <el-col :span="8">
-                  {{ it.Name }}
-                </el-col>
-                <el-col :span="8">
-                  {{ it.Gold }}
-                </el-col>
-              </el-row>
+            <div class="row">
+              <div v-if="!All[item.name]" class="notstart">敬请期待</div>
+              <div v-else>
+                <el-row class="item" v-for="(it, i) in All[item.name]" :key="i">
+                  <el-col :span="8">
+                    <div :class="i < 3 ? 'no' : ''">{{ i + 1 }}</div>
+                  </el-col>
+                  <el-col :span="8">
+                    {{ it.Name }}
+                  </el-col>
+                  <el-col :span="8">
+                    {{ it.Gold }}
+                  </el-col>
+                </el-row>
+              </div>
             </div>
           </el-row>
         </el-col>
@@ -34,15 +36,15 @@
     <div class="replay">
       <div class="title">点击按钮查看当局回放 <span>仅展示最近40局</span></div>
       <div class="btns">
-        <el-button
-          v-if="Gid - i - 1 > 0"
-          class="btn"
-          @click="$router.push('/replay?gid=' + (Gid - i - 1))"
-          v-for="(item, i) in 40"
-          :key="i"
-        >
-          第{{ Gid - i - 1 }}局
-        </el-button>
+        <span v-for="(item, i) in 40" :key="i">
+          <el-button
+            v-if="Gid - i - 1 > 0"
+            class="btn"
+            @click="$router.push('/replay?gid=' + (Gid - i - 1))"
+          >
+            第{{ Gid - i - 1 }}局
+          </el-button>
+        </span>
       </div>
     </div>
   </section>

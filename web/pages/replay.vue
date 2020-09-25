@@ -1,10 +1,10 @@
 <template>
   <div class="container">
     <el-page-header @back="$router.go(-1)" content="回放详情"> </el-page-header>
-    <el-button @click="onPre()">上一轮</el-button>
+    <el-button @click="onPre()" type="primary" plain>上一轮</el-button>
     <span> 第 {{ roundNo + 1 }} 轮</span>
-    <el-button @click="onNext()">下一轮</el-button>
-    <el-button @click="onAutoPlay()">
+    <el-button @click="onNext()" type="primary" plain>下一轮</el-button>
+    <el-button @click="onAutoPlay()" type="primary" plain>
       {{ loopId ? '停止播放' : '自动播放' }}
     </el-button>
 
@@ -18,8 +18,8 @@
       >
         <div class="gold">{{ it.gold }}</div>
         <div v-if="it.players">
-          <div class="item" v-for="(it, i) in it.players" :key="i" v-if="i < 3">
-            {{ it.Name }} - {{ it.Gold }}
+          <div v-for="(it, i) in it.players" :key="i">
+            <div class="item" v-if="i < 3">{{ it.Name }} - {{ it.Gold }}</div>
           </div>
         </div>
       </div>
@@ -31,9 +31,11 @@
         width="270"
         v-model="popShow"
       >
+        <div v-if="crtPos" class="crtPos">当前坐标：{{ crtPos }}</div>
         <div v-for="(it, i) in playersInfo" :key="i">
-          {{ i + 1 }}、团队名：<span class="name">{{ it.Name }}</span>
-          金币数：<span class="gold">{{ it.Gold }}</span>
+          {{ i + 1 }}、团队：<span class="name">{{ it.Name }}</span>
+          金币：
+          <span class="gold">{{ it.Gold }}</span>
         </div>
       </el-popover>
     </div>
@@ -54,6 +56,7 @@ export default {
       loopId: 0,
       popShow: true,
       playersInfo: [],
+      crtPos: '',
       players: [],
       total: [],
     };
@@ -82,7 +85,6 @@ export default {
     start() {
       let { x, y, players, roundNo, allRound } = this;
       if (roundNo > allRound.length - 1) {
-        alert('播放已结束');
         return false;
       }
 
@@ -102,28 +104,41 @@ export default {
         }
       }
       this.total = afterArr;
-
-      console.log(round);
     },
 
     mouseOver(it) {
       this.playersInfo = it.players || [];
+      this.crtPos = it.pos;
     },
     mouseLeave() {
-      // this.playersInfo = [];
+      this.playersInfo = [];
+      this.crtPos = '';
     },
     onNext() {
       if (this.roundNo < this.allRound.length - 1) this.roundNo++;
+      else if (_this.loopId) {
+        this.$notify({
+          message: '播放结束',
+          type: 'success',
+          center: true,
+        });
+        this.onStop();
+      }
     },
     onPre() {
       if (this.roundNo > 0) this.roundNo--;
     },
     onAutoPlay() {
-      if (!_this.loopId)
+      if (!_this.loopId) {
+        this.$notify({
+          message: '播放开始',
+          type: 'success',
+          center: true,
+        });
         _this.loopId = setInterval(() => {
           _this.onNext();
         }, 3000);
-      else _this.onStop();
+      } else _this.onStop();
     },
     onStop() {
       clearInterval(_this.loopId);
@@ -176,13 +191,16 @@ export default {
       justify-content: center;
       align-items: center;
       .item {
-        width: 85px;
+        width: 95px;
         height: 25px;
         line-height: 23px;
         border: 1px solid red;
         margin: 3px;
         border-radius: 15px;
         z-index: 99;
+        color: #409eff;
+        background: #ecf5ff;
+        border-color: #b3d8ff;
       }
       .gold {
         width: 100px;
@@ -190,12 +208,12 @@ export default {
         position: absolute;
         top: 0;
         left: 0;
-        color: #ccc;
+        color: #969494;
         padding-top: 10px;
         font-size: 60px;
         font-style: italic;
         z-index: 1;
-        opacity: 0.8;
+        opacity: 0.1;
       }
     }
     .items:hover {
@@ -206,10 +224,13 @@ export default {
     position: absolute;
     top: 80px;
     left: 20px;
+    .crtPos {
+      color: crimson;
+    }
     .name {
       font-weight: bold;
       width: 150px;
-      color: #303133;
+      color: #409eff;
     }
     .gold {
       font-weight: bold;
