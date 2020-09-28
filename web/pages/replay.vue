@@ -1,29 +1,43 @@
 <template>
   <div class="container">
     <el-page-header @back="$router.go(-1)" content="回放详情"> </el-page-header>
-    <!-- <div class="btns">
-      <el-input
-        class="btn"
-        v-model="column"
-        placeholder="请输入列数"
-      ></el-input>
+    <el-button @click="onPre()" type="primary" plain>上一轮</el-button>
+    <span> 第 {{ roundNo + 1 }} 轮</span>
+    <el-button @click="onNext()" type="primary" plain>下一轮</el-button>
+    <el-button @click="onAutoPlay()" type="primary" plain>
+      {{ loopId ? '停止播放' : '自动播放' }}
+    </el-button>
 
-      <el-input class="btn" v-model="rows" placeholder="请输入行数"></el-input>
-
-      <el-button @click="onChange">确定</el-button>
-    </div> -->
     <div class="main" :style="{ width: mainW + 'px', height: mainH + 'px' }">
-      <div @click="onClick(it)" class="items" v-for="(it, i) in total" :key="i">
-        <div class="item"></div>
-        <div class="item"></div>
-        <div class="item"></div>
-        <div class="item"></div>
-        <div class="item"></div>
-        <div class="item"></div>
-        <div class="item"></div>
-        <div class="item"></div>
-        <div class="item"></div>
+      <div
+        @mouseover="mouseOver(it)"
+        @mouseleave="mouseLeave()"
+        class="items"
+        v-for="(it, i) in total"
+        :key="i"
+      >
+        <div class="gold">{{ it.gold }}</div>
+        <div v-if="it.players">
+          <div v-for="(it, i) in it.players" :key="i">
+            <div class="item" v-if="i < 3">{{ it.Name }} - {{ it.Gold }}</div>
+          </div>
+        </div>
       </div>
+    </div>
+    <div class="popover">
+      <el-popover
+        placement="top-start"
+        title="玩家信息"
+        width="270"
+        v-model="popShow"
+      >
+        <div v-if="crtPos" class="crtPos">当前坐标：{{ crtPos }}</div>
+        <div v-for="(it, i) in playersInfo" :key="i">
+          {{ i + 1 }}、团队：<span class="name">{{ it.Name }}</span>
+          金币：
+          <span class="gold">{{ it.Gold }}</span>
+        </div>
+      </el-popover>
     </div>
   </div>
 </template>
@@ -38,67 +52,107 @@ export default {
   },
   data() {
     return {
-      column: 12, //列
-      rows: 6, //行
-      mainW: '',
-      mainH: '',
-      total: 0,
+      roundNo: 0,
+      loopId: 0,
+      popShow: true,
+      playersInfo: [],
+      crtPos: '',
+      players: [],
+      total: [],
     };
   },
-  async asyncData({ app, query }) {
-    let data = { gid: query.gid };
-    let res = await app.$axios.get('game', { params: data });
-    console.log(res);
+  watch: {
+    roundNo(n) {
+      this.start();
+    },
   },
+  async asyncData({ app, query }) {
+    const data = { gid: query.gid };
+    const res = await app.$axios.get('game', { params: data });
+
+    let allRound = [];
+    res.forEach((it) => {
+      allRound.push(JSON.parse(it));
+    });
+    const { Wid: x, Hei: y } = allRound[0];
+    const mainW = x * 100 + 2,
+      mainH = y * 100 + 2;
+
+    return { allRound, x, y, mainW, mainH };
+  },
+
   methods: {
-    /**
-     * 初始化
-     */
-    init() {
-      _this.onChange();
+    start() {
+      let { x, y, players, roundNo, allRound } = this;
+      if (roundNo > allRound.length - 1) {
+        return false;
+      }
 
-      const afterArr = [];
-      let y = _this.column;
-      let x = _this.rows;
+      const round = allRound[roundNo],
+        tilemap = round.Tilemap,
+        afterArr = [];
 
-      for (let j = 0; j < x; j++) {
-        for (let i = 0; i < y; i++) {
+      for (let i = 0; i < y; i++) {
+        for (let j = 0; j < x; j++) {
+          const it = tilemap[i][j];
           const item = {
-            type: 'init', //设置初始属性
-            isCheck: false, //是否点击过
-            pos: [i, j], //格子的坐标
-            isRepeat: 'not', //是否递归过
-            isTip: false, //用户点击数字时的提示
-            coin: 10, //金币
+            players: it.Players || [], //玩家属性
+            pos: [j, i], //格子的坐标
+            gold: it.Gold, //金币
           };
           afterArr.push(item);
         }
       }
-      // console.log(afterArr);
-      _this.total = afterArr;
+      this.total = afterArr;
     },
 
-    onChange() {
-      _this.mainW = _this.column * 100 + 2;
-      _this.mainH = _this.rows * 100 + 2;
+    mouseOver(it) {
+      this.playersInfo = it.players || [];
+      this.crtPos = it.pos;
     },
-    onClick(it) {
-      alert(it.pos);
+    mouseLeave() {
+      this.playersInfo = [];
+      this.crtPos = '';
     },
-
-    /**
-     * 根据坐标计算索引
-     * @param {array}
-     * @return {number}
-     */
-    calcIdx([a, b]) {
-      const row = this.boardSize[0];
-      return b * row + a;
+    onNext() {
+      if (this.roundNo < this.allRound.length - 1) this.roundNo++;
+      else if (_this.loopId) {
+        this.$notify({
+          message: '播放结束',
+          type: 'success',
+          center: true,
+        });
+        this.onStop();
+      }
+    },
+    onPre() {
+      if (this.roundNo > 0) this.roundNo--;
+    },
+    onAutoPlay() {
+      if (!_this.loopId) {
+        this.$notify({
+          message: '播放开始',
+          type: 'success',
+          center: true,
+        });
+        _this.loopId = setInterval(() => {
+          _this.onNext();
+        }, 3000);
+      } else _this.onStop();
+    },
+    onStop() {
+      clearInterval(_this.loopId);
+      _this.loopId = 0;
     },
   },
   created() {
     _this = this;
-    _this.init();
+    _this.start();
+  },
+  beforeDestroy() {
+    _this.$once('hook:beforeDestroy', () => {
+      _this.onStop();
+    });
   },
 };
 </script>
@@ -131,20 +185,56 @@ export default {
       user-select: none;
       background: #dedede;
       transition: all 0.2s;
+      font-size: 14px;
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
       align-items: center;
       .item {
-        width: 25px;
+        width: 95px;
         height: 25px;
-        border-radius: 50%;
-        border: 1px solid #aaa;
+        line-height: 23px;
+        border: 1px solid red;
         margin: 3px;
+        border-radius: 15px;
+        z-index: 99;
+        color: #409eff;
+        background: #ecf5ff;
+        border-color: #b3d8ff;
+      }
+      .gold {
+        width: 100px;
+        height: 100px;
+        position: absolute;
+        top: 0;
+        left: 0;
+        color: #969494;
+        padding-top: 10px;
+        font-size: 60px;
+        font-style: italic;
+        z-index: 1;
+        opacity: 0.1;
       }
     }
-    :hover {
+    .items:hover {
       background: #eee;
+    }
+  }
+  .popover {
+    position: absolute;
+    top: 80px;
+    left: 20px;
+    .crtPos {
+      color: crimson;
+    }
+    .name {
+      font-weight: bold;
+      width: 150px;
+      color: #409eff;
+    }
+    .gold {
+      font-weight: bold;
+      color: #929a19;
     }
   }
 }

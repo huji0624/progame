@@ -1,36 +1,51 @@
 <template>
   <section class="main">
     <div class="head">排行榜</div>
-    <el-button @click="onClick">排序</el-button
-    ><el-button @click="$router.push('/replay?gid=2')">回放</el-button>
     <div class="list">
-      <el-tabs class="tabs" v-model="activeName">
-        <el-tab-pane v-for="(it, i) in tabs" :key="i" :label="it.label">
-          <div>
+      <el-row class="rows">
+        <el-col :span="6" v-for="(item, i) in tabs" :key="i">
+          <span class="name"> {{ item.label }}</span>
+          <el-row>
             <div class="title">
-              <el-row class="row">
+              <el-row>
                 <el-col :span="8"> 名次 </el-col>
                 <el-col :span="8"> 队名 </el-col>
                 <el-col :span="8"> 得分 </el-col>
               </el-row>
             </div>
-            <div v-if="!All[it.name]">比赛还未开始</div>
-            <div v-else class="rows" v-for="(it, i) in All[it.name]" :key="i">
-              <el-row class="row">
-                <el-col :span="8">
-                  <div :class="i < 3 ? 'no' : ''">{{ i + 1 }}</div>
-                </el-col>
-                <el-col :span="8">
-                  {{ it.Name }}
-                </el-col>
-                <el-col :span="8">
-                  {{ it.Gold }}
-                </el-col>
-              </el-row>
+            <div class="row">
+              <div v-if="!All[item.name]" class="notstart">敬请期待</div>
+              <div v-else>
+                <el-row class="item" v-for="(it, i) in All[item.name]" :key="i">
+                  <el-col :span="8">
+                    <div :class="i < 3 ? 'no' : ''">{{ i + 1 }}</div>
+                  </el-col>
+                  <el-col :span="8">
+                    {{ it.Name }}
+                  </el-col>
+                  <el-col :span="8">
+                    {{ it.Gold }}
+                  </el-col>
+                </el-row>
+              </div>
             </div>
-          </div>
-        </el-tab-pane>
-      </el-tabs>
+          </el-row>
+        </el-col>
+      </el-row>
+    </div>
+    <div class="replay">
+      <div class="title">点击按钮查看当局回放 <span>仅展示最近42局</span></div>
+      <div class="btns">
+        <span v-for="(item, i) in 42" :key="i">
+          <el-button
+            v-if="Gid - i - 1 > 0"
+            class="btn"
+            @click="$router.push('/replay?gid=' + (Gid - i - 1))"
+          >
+            第{{ Gid - i - 1 }}局
+          </el-button>
+        </span>
+      </div>
     </div>
   </section>
 </template>
@@ -45,8 +60,9 @@ export default {
   },
   data() {
     return {
-      activeName: '',
-
+      loopId: '',
+      All: {},
+      Gid: 0,
       tabs: [
         { label: '第一次排名', name: 'First' },
         { label: '第二次排名', name: 'Second' },
@@ -55,24 +71,36 @@ export default {
       ],
     };
   },
-  async asyncData({ app, params, store }) {
-    let res = await app.$axios.get('rank');
-    const All = res;
-    const { Gid } = res;
-
-    return { Gid, All };
+  // async asyncData({ app, params, store }) {
+  //   let res = await app.$axios.get('rank');
+  //   const All = res,
+  //     { Gid } = res;
+  //   return { Gid, All };
+  // },
+  mounted() {
+    _this.loopId = setInterval(() => {
+      _this.init();
+    }, 10000);
   },
-  mounted() {},
   methods: {
     async init() {
-      // let res = await this.$axios.get('rank');
+      let res = await _this.$axios.get('rank');
+      _this.All = res;
+      _this.Gid = res.Gid;
     },
-    onClick() {
-      this.record.sort(compare('coin'));
+    onSort() {
+      //排序，已废弃
+      _this.record.sort(compare('coin'));
     },
   },
   created() {
     _this = this;
+    _this.init();
+  },
+  beforeDestroy() {
+    this.$once('hook:beforeDestroy', () => {
+      clearInterval(_this.loopId);
+    });
   },
 };
 
@@ -100,33 +128,77 @@ let compare = function (prop) {
   margin: 0 auto;
   text-align: center;
   padding: 10px;
+  font-size: 14px;
   .head {
-    padding: 20px;
+    padding: 10px;
+    font-size: 20px;
   }
   .list {
-    padding: 30px 100px;
-    .tabs {
-      text-align: center;
+    padding: 20px 100px;
+    font-size: 16px;
+    .name {
+      font-size: 20px;
+      line-height: 48px;
+    }
 
-      .title {
-        background: #99a9bf;
-        color: #fff;
-        line-height: 78px;
-        margin: 3px;
+    .title {
+      background: #99a9bf;
+      color: #fff;
+      line-height: 58px;
+      margin: 3px;
+    }
+    .rows {
+      color: #000;
+
+      background: #d3dce6;
+      margin: 3px;
+
+      .notstart {
+        padding-top: 150px;
+        color: #666;
       }
-      .rows {
-        color: #000;
-        background: #d3dce6;
+      .row {
+        font-size: 16px;
+        height: 500px;
+        overflow: hidden auto;
+        line-height: 60px;
         margin: 3px;
-        .row {
-          line-height: 70px;
-          .no {
-            background: red;
-          }
+        background: #e1e2e2;
+
+        .item {
+          margin: 3px;
+          background: #e5e9f2;
+          // box-shadow: 0px 2px 10px 0px rgba(198, 198, 198, 0.5);
+        }
+        .no {
+          color: #fff;
+          border-radius: 5px;
+          background-color: #f56c6c;
+          border-color: #f56c6c;
         }
       }
-      .rows:hover {
-        background: #e5e9f2;
+    }
+  }
+  .replay {
+    margin: 10px 100px;
+    padding: 10px;
+    background: #d3dce6;
+    .title {
+      line-height: 50px;
+      font-size: 18px;
+      color: #656464;
+      text-align: left;
+      margin-left: 10px;
+      span {
+        font-size: 13px;
+      }
+    }
+    .btns {
+      text-align: left;
+
+      .btn {
+        width: 100px;
+        margin: 5px 10px;
       }
     }
   }

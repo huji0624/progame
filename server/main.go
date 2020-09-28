@@ -25,7 +25,7 @@ func WhateverOrigin(r *http.Request) bool {
 }
 
 /*
-	msgtype 0登陆 -1登陆失败 1请准备 2准备好了 3游戏信息 4玩家行动
+	msgtype 0登陆 -1登陆失败 1请准备 2准备好了 3游戏信息 4玩家行动 5游戏结束
 */
 type Msg struct {
 	Msgtype int
@@ -33,6 +33,7 @@ type Msg struct {
 	RoundID int
 	X       int
 	Y       int
+	Sorted  []*GameScore `json:"Results,omitempty"`
 }
 
 type PlayerInfo struct {
@@ -46,9 +47,8 @@ type Player struct {
 	c  *websocket.Conn
 	rc chan *Msg
 
-	playing bool
-	token   string
-	Info    *PlayerInfo
+	token string
+	Info  *PlayerInfo
 }
 
 var upgrader = websocket.Upgrader{CheckOrigin: WhateverOrigin} // use default options
@@ -57,15 +57,15 @@ var connections = make(map[string]*Player)
 var prepares = make(map[string]*Player)
 
 func LogStruct(v interface{}) {
-	bt, err := json.Marshal(v)
+	bt, err := json.MarshalIndent(v, "", "\t")
 	if err == nil {
 		LogDebug(string(bt))
 	}
 }
 
 func WriteToClient(c *websocket.Conn, v interface{}) {
-	log.Println("will write data:")
-	LogStruct(v)
+	// log.Println("will write data:")
+	// LogStruct(v)
 	c.WriteJSON(v)
 }
 
@@ -74,8 +74,8 @@ func WriteToClientData(c *websocket.Conn, data []byte) {
 	if err != nil {
 		log.Println("write err:", err)
 	} else {
-		LogDebug("write data:")
-		LogStruct(string(data))
+		// LogDebug("write data:")
+		// LogStruct(string(data))
 	}
 }
 
@@ -102,15 +102,35 @@ func echo(w http.ResponseWriter, r *http.Request) {
 		log.Println("read err:", err)
 	} else {
 		if jmsg.Msgtype == 0 {
-			rc := make(chan *Msg)
-			p := &Player{c: c, rc: rc}
-			p.token = jmsg.Token
-			prepares[jmsg.Token] = p
-			WriteToClient(c, &jmsg)
-			go ReadLoop(p, jmsg.Token)
+			allowed := false
+			name, ok := tokenmap[jmsg.Token]
+			if ok {
+				_, online := prepares[name]
+				if !online {
+					allowed = true
+				} else {
+					allowed = false
+				}
+			} else {
+				allowed = false
+			}
+
+			if allowed {
+				rc := make(chan *Msg)
+				p := &Player{c: c, rc: rc}
+				p.token = name
+				prepares[name] = p
+				WriteToClient(c, &jmsg)
+				go ReadLoop(p, jmsg.Token)
+			} else {
+				jmsg.Msgtype = -1
+				WriteToClient(c, &jmsg)
+				c.Close()
+			}
 		} else {
 			jmsg.Msgtype = -1
 			WriteToClient(c, &jmsg)
+			c.Close()
 		}
 	}
 }
@@ -124,13 +144,13 @@ func KickPlayer(p *Player) {
 
 type Tile struct {
 	Gold    int
-	P       []*GameScore `json:"body,omitempty"`
+	P       []*GameScore `json:"Players,omitempty"`
 	players map[string]*Player
 }
 
 const (
-	MapWidth  = 3
-	MapHeight = 4
+	MapWidth  = 10
+	MapHeight = 6
 )
 
 type Game struct {
@@ -168,14 +188,11 @@ func initGame(g *Game) {
 		v.Info.Gold = 0
 		v.Info.Key = token
 
-		MovePlayer(g, v, x, y)
-
-		v.playing = true
+		MovePlayerForce(g, v, x, y)
 	}
 }
 
 func PublicToClientData(data []byte) {
-	LogDebug("will pub data:", string(data))
 	for _, v := range connections {
 		WriteToClientData(v.c, data)
 	}
@@ -198,6 +215,9 @@ func pubGameMap(g *Game) []byte {
 		}
 	}
 
+	// LogDebug("will pub data:")
+	// LogStruct(g)
+
 	jmsg, err := json.Marshal(g)
 	if err != nil {
 		log.Println("pubGame err:", err)
@@ -208,13 +228,35 @@ func pubGameMap(g *Game) []byte {
 	return jmsg
 }
 
-func MovePlayer(g *Game, player *Player, x int, y int) {
-	info := player.Info
+func pubGameResults() {
+	tmsg := &Msg{Msgtype: 5, Sorted: records.Sorted}
 
-	if player.playing && x == info.X && y == info.Y {
-		log.Println("Player not moving!", player.token)
-		return
+	jmsg, err := json.Marshal(tmsg)
+	if err != nil {
+		log.Println("pubGame err:", err)
+	} else {
+		PublicToClientData(jmsg)
 	}
+}
+
+func AbsI(n int) int {
+	if n < 0 {
+		return -n
+	} else {
+		return n
+	}
+}
+
+func MaxI(n int, m int) int {
+	if n < m {
+		return m
+	} else {
+		return n
+	}
+}
+
+func MovePlayerForce(g *Game, player *Player, x int, y int) {
+	info := player.Info
 
 	t := g.Tilemap[info.Y][info.X]
 
@@ -227,8 +269,28 @@ func MovePlayer(g *Game, player *Player, x int, y int) {
 	tt.players[info.Key] = player
 }
 
+func MovePlayer(g *Game, player *Player, x int, y int) {
+	info := player.Info
+
+	//player move cost gold.And get one gold if not move.
+	step := AbsI(x-info.X) + AbsI(y-info.Y)
+	if step == 0 {
+		log.Println("Player not moving!", player.token, x, ",", y)
+		player.Info.Gold++
+		return
+	} else if step < info.Gold {
+		player.Info.Gold = player.Info.Gold - step
+	} else {
+		player.Info.Gold++
+		log.Println("Gold not enough!", player.token)
+		return
+	}
+
+	MovePlayerForce(g, player, x, y)
+}
+
 func CheckGameOver(g *Game) bool {
-	if g.RoundID > 100 {
+	if g.RoundID == 10 {
 		return true
 	}
 
@@ -255,9 +317,9 @@ func ApplyGameLogic(g *Game) {
 }
 
 func RandomGenGold(g *Game) {
-	n := MapWidth + MapHeight
+	n := len(connections)
 	for i := 0; i < n; i++ {
-		r := rand.Intn(n)
+		r := rand.Intn(MapWidth + MapHeight)
 
 		x := rand.Intn(MapWidth)
 		y := rand.Intn(MapHeight)
@@ -342,6 +404,7 @@ func PlayGameRounds(game *Game) {
 			game.status = -1
 			log.Println("Game Over.")
 			SaveGameResult(game)
+			pubGameResults()
 			break
 		}
 	}
@@ -406,18 +469,36 @@ func GameLoop() {
 }
 
 func SaveGameResult(g *Game) {
-	for _, p := range connections {
-		p.playing = false
-		records.Scores[p.Info.Key] = records.Scores[p.Info.Key] + p.Info.Gold
+	if records.Scores == nil {
+		records.Scores = make(map[int]map[string]int)
 	}
 
+	tmpScore := make(map[string]int)
+	for _, p := range connections {
+		tmpScore[p.Info.Key] = p.Info.Gold
+	}
+	records.Scores[records.Index] = tmpScore
+	records.Index++
+	if records.Index == 50 {
+		records.Index = 0
+	}
+
+	totalScore := make(map[string]int)
+	totalCount := make(map[string]int)
 	ps := make([]*GameScore, 0, len(connections))
-	for k, v := range records.Scores {
-		ps = append(ps, &GameScore{Name: k, Gold: v})
+	for _, v := range records.Scores {
+		for key, score := range v {
+			totalScore[key] = totalScore[key] + score
+			totalCount[key] = totalCount[key] + 1
+		}
+	}
+	for k, v := range totalScore {
+		av := v / totalCount[k]
+		ps = append(ps, &GameScore{Name: k, Gold: av})
 	}
 	sort.Slice(ps, func(i, j int) bool { return ps[i].Gold > ps[j].Gold })
+
 	records.Sorted = ps
-	records.Count++
 
 	LogStruct(records)
 	grecord, _ := json.Marshal(g.roundRecords)
@@ -430,31 +511,17 @@ func SaveGameResult(g *Game) {
 	}
 }
 
-type GameScore struct {
-	Name string
-	Gold int
-}
-
 type GameRank struct {
 	// Gameresults []
 	Sorted []*GameScore
-	Count  int
 
-	Scores map[string]int
+	Index  int
+	Scores map[int]map[string]int
 }
 
-func home(w http.ResponseWriter, r *http.Request) {
-
-	out := ""
-
-	bt, err := json.Marshal(records)
-	if err != nil {
-		out = "error"
-	} else {
-		out = string(bt)
-	}
-
-	_, _ = w.Write([]byte(out))
+type GameScore struct {
+	Name string
+	Gold int
 }
 
 type Rank struct {
@@ -496,6 +563,40 @@ func gameHandler(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write(bt)
 	} else {
 		_, _ = w.Write([]byte("no such game."))
+	}
+}
+
+func saveHandler(w http.ResponseWriter, r *http.Request) {
+	setupresponse(w, r)
+
+	var err string
+
+	r.ParseForm()
+	token := r.Form.Get("token")
+	name := r.Form.Get("name")
+	switch name {
+	case "total":
+	case "first":
+	case "second":
+	case "third":
+	default:
+		err = "params err"
+	}
+	if token != "iaijmnxuahiqooqjs" {
+		err = "token fail."
+	}
+	if err != "" {
+		_, _ = w.Write([]byte(err))
+		return
+	}
+
+	bt, _ := json.Marshal(records)
+	reterr := ioutil.WriteFile(recordsPath+"/"+name+".json", bt, 0644)
+
+	if reterr != nil {
+		_, _ = w.Write([]byte(reterr.Error()))
+	} else {
+		_, _ = w.Write([]byte(name + " DONE"))
 	}
 }
 
@@ -549,6 +650,7 @@ func rankHandler(w http.ResponseWriter, r *http.Request) {
 var records *GameRank
 var recordsPath string
 var g_game *Game
+var tokenmap map[string]string
 
 func main() {
 	recordsPath = "records"
@@ -556,17 +658,25 @@ func main() {
 	os.Mkdir(recordsPath, os.ModePerm)
 
 	records = &GameRank{}
-	records.Scores = make(map[string]int)
+
+	tpath := recordsPath + "/tokenmap.json"
+	b, ex := ioutil.ReadFile(tpath)
+	if ex == nil {
+		json.Unmarshal(b, &tokenmap)
+		LogStruct(tokenmap)
+	} else {
+		tokenmap = make(map[string]string)
+	}
 
 	go GameLoop()
 
 	flag.Parse()
 	log.SetFlags(0)
+	http.HandleFunc("/save", saveHandler)
 	http.HandleFunc("/game", gameHandler)
 	http.HandleFunc("/rank", rankHandler)
-	http.HandleFunc("/", home)
+	http.Handle("/", http.FileServer(http.Dir("../web/dist")))
 	http.HandleFunc("/ws", echo)
-	// http.HandleFunc("/", home)
 	log.Println("ws server ready...")
 	log.Fatal(http.ListenAndServe("0.0.0.0:8888", nil))
 }

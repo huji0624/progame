@@ -36,8 +36,8 @@
                   }else if(jmsg.Msgtype==1){
                     ws.send(JSON.stringify({msgtype:2,token:value}));
                   }else if(jmsg.Msgtype==3){
-                    let x = Math.floor(Math.random()*3)
-                    let y = Math.floor(Math.random()*3)
+                    let x = Math.floor(Math.random()*jmsg.Wid)
+                    let y = Math.floor(Math.random()*jmsg.Hei)
                     ws.send(JSON.stringify({msgtype:4,token:value,x:x,y:y,RoundID:jmsg.RoundID}));
                   }
                };
