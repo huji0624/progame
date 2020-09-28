@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/md5"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -291,7 +290,7 @@ func MovePlayer(g *Game, player *Player, x int, y int) {
 }
 
 func CheckGameOver(g *Game) bool {
-	if g.RoundID == 20 {
+	if g.RoundID == 10 {
 		return true
 	}
 
@@ -470,17 +469,36 @@ func GameLoop() {
 }
 
 func SaveGameResult(g *Game) {
-	for _, p := range connections {
-		records.Scores[p.Info.Key] = records.Scores[p.Info.Key] + p.Info.Gold
+	if records.Scores == nil {
+		records.Scores = make(map[int]map[string]int)
 	}
 
+	tmpScore := make(map[string]int)
+	for _, p := range connections {
+		tmpScore[p.Info.Key] = p.Info.Gold
+	}
+	records.Scores[records.Index] = tmpScore
+	records.Index++
+	if records.Index == 50 {
+		records.Index = 0
+	}
+
+	totalScore := make(map[string]int)
+	totalCount := make(map[string]int)
 	ps := make([]*GameScore, 0, len(connections))
-	for k, v := range records.Scores {
-		ps = append(ps, &GameScore{Name: k, Gold: v})
+	for _, v := range records.Scores {
+		for key, score := range v {
+			totalScore[key] = totalScore[key] + score
+			totalCount[key] = totalCount[key] + 1
+		}
+	}
+	for k, v := range totalScore {
+		av := v / totalCount[k]
+		ps = append(ps, &GameScore{Name: k, Gold: av})
 	}
 	sort.Slice(ps, func(i, j int) bool { return ps[i].Gold > ps[j].Gold })
+
 	records.Sorted = ps
-	records.Count++
 
 	LogStruct(records)
 	grecord, _ := json.Marshal(g.roundRecords)
@@ -493,17 +511,17 @@ func SaveGameResult(g *Game) {
 	}
 }
 
-type GameScore struct {
-	Name string
-	Gold int
-}
-
 type GameRank struct {
 	// Gameresults []
 	Sorted []*GameScore
-	Count  int
 
-	Scores map[string]int
+	Index  int
+	Scores map[int]map[string]int
+}
+
+type GameScore struct {
+	Name string
+	Gold int
 }
 
 type Rank struct {
@@ -582,14 +600,6 @@ func saveHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func md5V2(str string) string {
-	ts := fmt.Sprintf("%v", time.Now().UnixNano())
-	data := []byte(str + ts)
-	has := md5.Sum(data)
-	md5str := fmt.Sprintf("%x", has)
-	return md5str
-}
-
 func rankHandler(w http.ResponseWriter, r *http.Request) {
 	setupresponse(w, r)
 
@@ -648,7 +658,6 @@ func main() {
 	os.Mkdir(recordsPath, os.ModePerm)
 
 	records = &GameRank{}
-	records.Scores = make(map[string]int)
 
 	tpath := recordsPath + "/tokenmap.json"
 	b, ex := ioutil.ReadFile(tpath)
