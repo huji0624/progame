@@ -72,7 +72,7 @@ export default {
    */
   components: true,
   router: {
-    base: process.env.NODE_ENV === 'production' ? '/testnuxt/' : '/',
+    base: process.env.NODE_ENV === 'production' ? '/' : '/',
     fallback: true,
   },
   /*
