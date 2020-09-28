@@ -19,7 +19,9 @@
         <div class="gold">{{ it.gold }}</div>
         <div v-if="it.players">
           <div v-for="(it, i) in it.players" :key="i">
-            <div class="item" v-if="i < 3">{{ it.Name }} - {{ it.Gold }}</div>
+            <div class="item" :class="{ focus: it.isFocus }" v-if="i < 3">
+              {{ it.Name }} - {{ it.Gold }}
+            </div>
           </div>
         </div>
       </div>
@@ -39,11 +41,30 @@
         </div>
       </el-popover>
     </div>
+    <div class="playerlist">
+      <div class="list">
+        选择你关注的游戏队伍
+        <br />
+        <el-checkbox
+          :indeterminate="isIndeterminate"
+          v-model="checkAll"
+          @change="onCheckAll"
+          >全选</el-checkbox
+        >
+        <!-- <div style="margin: 15px 0"></div> -->
+        <el-checkbox-group v-model="focusPlayers" @change="onChangePlayer">
+          <el-checkbox v-for="it in allPlayers" :label="it" :key="it">
+            {{ it }}
+          </el-checkbox>
+        </el-checkbox-group>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
 let _this;
+const allPlayers = [];
 export default {
   head() {
     return {
@@ -55,10 +76,17 @@ export default {
       roundNo: 0,
       loopId: 0,
       popShow: true,
+      playerlistShow: true,
       playersInfo: [],
       crtPos: '',
       players: [],
       total: [],
+
+      isFirst: true,
+      checkAll: false,
+      focusPlayers: [],
+      isIndeterminate: false,
+      allPlayers: [],
     };
   },
   watch: {
@@ -83,7 +111,7 @@ export default {
 
   methods: {
     start() {
-      let { x, y, players, roundNo, allRound } = this;
+      let { x, y, players, roundNo, allRound, focusPlayers } = this;
       if (roundNo > allRound.length - 1) {
         return false;
       }
@@ -95,14 +123,29 @@ export default {
       for (let i = 0; i < y; i++) {
         for (let j = 0; j < x; j++) {
           const it = tilemap[i][j];
+          const maps = it.Players || [];
+          let newA = [];
+          //只有第一次进来才遍历全部玩家
+          if (this.isFirst && it.Players) {
+            maps.map((it) => {
+              this.allPlayers.push(it.Name);
+            });
+          }
+          //添加关注玩家
+          newA = maps.map((it) => {
+            _this.focusPlayers.includes(it.Name) && (it.isFocus = true);
+            return it;
+          });
+          newA = newA.sort(compare);
           const item = {
-            players: it.Players || [], //玩家属性
+            players: newA || [], //玩家属性
             pos: [j, i], //格子的坐标
             gold: it.Gold, //金币
           };
           afterArr.push(item);
         }
       }
+      this.isFirst = false;
       this.total = afterArr;
     },
 
@@ -144,6 +187,16 @@ export default {
       clearInterval(_this.loopId);
       _this.loopId = 0;
     },
+    onCheckAll(val) {
+      this.focusPlayers = val ? this.allPlayers : [];
+      this.isIndeterminate = false;
+    },
+    onChangePlayer(value) {
+      let checkedCount = value.length;
+      this.checkAll = checkedCount === this.allPlayers.length;
+      this.isIndeterminate =
+        checkedCount > 0 && checkedCount < this.allPlayers.length;
+    },
   },
   created() {
     _this = this;
@@ -155,6 +208,9 @@ export default {
     });
   },
 };
+function compare(a, b) {
+  if (a.isFocus && !b.isFocus) return -1;
+}
 </script>
 
 <style lang="less" scoped>
@@ -176,6 +232,7 @@ export default {
     box-shadow: 0 0 #333333;
     border: 1px solid #888;
     margin: 10px auto;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
     .items {
       width: 100px;
       height: 100px;
@@ -201,6 +258,11 @@ export default {
         color: #409eff;
         background: #ecf5ff;
         border-color: #b3d8ff;
+      }
+      .focus {
+        color: #fff;
+        background-color: #409eff;
+        border-color: #409eff;
       }
       .gold {
         width: 100px;
@@ -235,6 +297,26 @@ export default {
     .gold {
       font-weight: bold;
       color: #929a19;
+    }
+  }
+  .playerlist {
+    position: absolute;
+    top: 80px;
+    right: 20px;
+    width: 300px;
+    .list {
+      position: absolute;
+      background: #fff;
+      min-width: 150px;
+      border: 1px solid #ebeef5;
+      padding: 12px;
+      z-index: 2000;
+      color: #606266;
+      line-height: 1.4;
+      text-align: justify;
+      font-size: 14px;
+      box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+      word-break: break-all;
     }
   }
 }
