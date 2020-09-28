@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/md5"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -25,7 +26,7 @@ func WhateverOrigin(r *http.Request) bool {
 }
 
 /*
-	msgtype 0登陆 -1登陆失败 1请准备 2准备好了 3游戏信息 4玩家行动
+	msgtype 0登陆 -1登陆失败 1请准备 2准备好了 3游戏信息 4玩家行动 5游戏结束
 */
 type Msg struct {
 	Msgtype int
@@ -33,6 +34,7 @@ type Msg struct {
 	RoundID int
 	X       int
 	Y       int
+	Sorted  []*GameScore `json:"Results,omitempty"`
 }
 
 type PlayerInfo struct {
@@ -101,15 +103,35 @@ func echo(w http.ResponseWriter, r *http.Request) {
 		log.Println("read err:", err)
 	} else {
 		if jmsg.Msgtype == 0 {
-			rc := make(chan *Msg)
-			p := &Player{c: c, rc: rc}
-			p.token = jmsg.Token
-			prepares[jmsg.Token] = p
-			WriteToClient(c, &jmsg)
-			go ReadLoop(p, jmsg.Token)
+			allowed := false
+			name, ok := tokenmap[jmsg.Token]
+			if ok {
+				_, online := prepares[name]
+				if !online {
+					allowed = true
+				} else {
+					allowed = false
+				}
+			} else {
+				allowed = false
+			}
+
+			if allowed {
+				rc := make(chan *Msg)
+				p := &Player{c: c, rc: rc}
+				p.token = name
+				prepares[name] = p
+				WriteToClient(c, &jmsg)
+				go ReadLoop(p, jmsg.Token)
+			} else {
+				jmsg.Msgtype = -1
+				WriteToClient(c, &jmsg)
+				c.Close()
+			}
 		} else {
 			jmsg.Msgtype = -1
 			WriteToClient(c, &jmsg)
+			c.Close()
 		}
 	}
 }
@@ -205,6 +227,17 @@ func pubGameMap(g *Game) []byte {
 	}
 
 	return jmsg
+}
+
+func pubGameResults() {
+	tmsg := &Msg{Msgtype: 5, Sorted: records.Sorted}
+
+	jmsg, err := json.Marshal(tmsg)
+	if err != nil {
+		log.Println("pubGame err:", err)
+	} else {
+		PublicToClientData(jmsg)
+	}
 }
 
 func AbsI(n int) int {
@@ -372,6 +405,7 @@ func PlayGameRounds(game *Game) {
 			game.status = -1
 			log.Println("Game Over.")
 			SaveGameResult(game)
+			pubGameResults()
 			break
 		}
 	}
@@ -548,6 +582,14 @@ func saveHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func md5V2(str string) string {
+	ts := fmt.Sprintf("%v", time.Now().UnixNano())
+	data := []byte(str + ts)
+	has := md5.Sum(data)
+	md5str := fmt.Sprintf("%x", has)
+	return md5str
+}
+
 func rankHandler(w http.ResponseWriter, r *http.Request) {
 	setupresponse(w, r)
 
@@ -598,6 +640,7 @@ func rankHandler(w http.ResponseWriter, r *http.Request) {
 var records *GameRank
 var recordsPath string
 var g_game *Game
+var tokenmap map[string]string
 
 func main() {
 	recordsPath = "records"
@@ -607,6 +650,15 @@ func main() {
 	records = &GameRank{}
 	records.Scores = make(map[string]int)
 
+	tpath := recordsPath + "/tokenmap.json"
+	b, ex := ioutil.ReadFile(tpath)
+	if ex == nil {
+		json.Unmarshal(b, &tokenmap)
+		LogStruct(tokenmap)
+	} else {
+		tokenmap = make(map[string]string)
+	}
+
 	go GameLoop()
 
 	flag.Parse()
@@ -614,10 +666,8 @@ func main() {
 	http.HandleFunc("/save", saveHandler)
 	http.HandleFunc("/game", gameHandler)
 	http.HandleFunc("/rank", rankHandler)
-	http.Handle("/", http.FileServer(http.Dir("./web/dist")))
-	// http.HandleFunc("/", home)
+	http.Handle("/", http.FileServer(http.Dir("../web/dist")))
 	http.HandleFunc("/ws", echo)
-	// http.HandleFunc("/", home)
 	log.Println("ws server ready...")
 	log.Fatal(http.ListenAndServe("0.0.0.0:8888", nil))
 }
