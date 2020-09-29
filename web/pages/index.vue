@@ -205,7 +205,7 @@ let compare = function (prop) {
     background: #2f0365;
     opacity: 0.8;
     border-radius: 10px;
-    border: 7px #6ae5ee solid;
+    border: 7px @bodercoler solid;
     box-shadow: 0 0 10px #ee6a92;
     .title {
       line-height: 50px;

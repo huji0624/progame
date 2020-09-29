@@ -1,62 +1,66 @@
 <template>
   <div class="container">
-    <el-page-header @back="$router.go(-1)" content="回放详情"> </el-page-header>
-    <el-button @click="onPre()" type="primary" plain>上一轮</el-button>
-    <span> 第 {{ roundNo + 1 }} 轮</span>
-    <el-button @click="onNext()" type="primary" plain>下一轮</el-button>
-    <el-button @click="onAutoPlay()" type="primary" plain>
-      {{ loopId ? '停止播放' : '自动播放' }}
-    </el-button>
+    <div v-if="nodata" class="nodata">该局游戏不存在</div>
+    <div v-else>
+      <el-page-header @back="$router.go(-1)" content="回放详情">
+      </el-page-header>
+      <el-button @click="onPre()" type="primary" plain>上一轮</el-button>
+      <span> 第 {{ roundNo + 1 }} 轮</span>
+      <el-button @click="onNext()" type="primary" plain>下一轮</el-button>
+      <el-button @click="onAutoPlay()" type="primary" plain>
+        {{ loopId ? '停止播放' : '自动播放' }}
+      </el-button>
 
-    <div class="main" :style="{ width: mainW + 'px', height: mainH + 'px' }">
-      <div
-        @mouseover="mouseOver(it)"
-        @mouseleave="mouseLeave()"
-        class="items"
-        v-for="(it, i) in total"
-        :key="i"
-      >
-        <div class="gold">{{ it.gold }}</div>
-        <div v-if="it.players">
-          <div v-for="(it, i) in it.players" :key="i">
-            <div class="item" :class="{ focus: it.isFocus }" v-if="i < 3">
-              {{ it.Name }} - {{ it.Gold }}
+      <div class="main" :style="{ width: mainW + 'px', height: mainH + 'px' }">
+        <div
+          @mouseover="mouseOver(it)"
+          @mouseleave="mouseLeave()"
+          class="items"
+          v-for="(it, i) in total"
+          :key="i"
+        >
+          <div class="gold">{{ it.gold }}</div>
+          <div v-if="it.players">
+            <div v-for="(it, i) in it.players" :key="i">
+              <div class="item" :class="{ focus: it.isFocus }" v-if="i < 3">
+                {{ it.Name }} - {{ it.Gold }}
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-    <div class="popover">
-      <el-popover
-        placement="top-start"
-        title="玩家信息"
-        width="270"
-        v-model="popShow"
-      >
-        <div v-if="crtPos" class="crtPos">当前坐标：{{ crtPos }}</div>
-        <div v-for="(it, i) in playersInfo" :key="i">
-          {{ i + 1 }}、团队：<span class="name">{{ it.Name }}</span>
-          金币：
-          <span class="gold">{{ it.Gold }}</span>
-        </div>
-      </el-popover>
-    </div>
-    <div class="playerlist">
-      <div class="list">
-        选择你关注的游戏队伍
-        <br />
-        <el-checkbox
-          :indeterminate="isIndeterminate"
-          v-model="checkAll"
-          @change="onCheckAll"
-          >全选</el-checkbox
+      <div class="popover">
+        <el-popover
+          placement="top-start"
+          title="玩家信息"
+          width="270"
+          v-model="popShow"
         >
-        <!-- <div style="margin: 15px 0"></div> -->
-        <el-checkbox-group v-model="focusPlayers" @change="onChangePlayer">
-          <el-checkbox v-for="it in allPlayers" :label="it" :key="it">
-            {{ it }}
-          </el-checkbox>
-        </el-checkbox-group>
+          <div v-if="crtPos" class="crtPos">当前坐标：{{ crtPos }}</div>
+          <div v-for="(it, i) in playersInfo" :key="i">
+            {{ i + 1 }}、团队：<span class="name">{{ it.Name }}</span>
+            金币：
+            <span class="gold">{{ it.Gold }}</span>
+          </div>
+        </el-popover>
+      </div>
+      <div class="playerlist">
+        <div class="list">
+          选择你关注的游戏队伍
+          <br />
+          <el-checkbox
+            :indeterminate="isIndeterminate"
+            v-model="checkAll"
+            @change="onCheckAll"
+            >全选</el-checkbox
+          >
+          <!-- <div style="margin: 15px 0"></div> -->
+          <el-checkbox-group v-model="focusPlayers" @change="onChangePlayer">
+            <el-checkbox v-for="it in allPlayers" :label="it" :key="it">
+              {{ it }}
+            </el-checkbox>
+          </el-checkbox-group>
+        </div>
       </div>
     </div>
   </div>
@@ -98,15 +102,16 @@ export default {
     const data = { gid: query.gid };
     const res = await app.$axios.get('game', { params: data });
 
-    let allRound = [];
-    res.forEach((it) => {
-      allRound.push(JSON.parse(it));
-    });
-    const { Wid: x, Hei: y } = allRound[0];
-    const mainW = x * 100 + 2,
-      mainH = y * 100 + 2;
-
-    return { allRound, x, y, mainW, mainH };
+    if (res instanceof Array) {
+      let allRound = [];
+      res.forEach((it) => {
+        allRound.push(JSON.parse(it));
+      });
+      const { Wid: x, Hei: y } = allRound[0];
+      const mainW = x * 100 + 2,
+        mainH = y * 100 + 2;
+      return { allRound, x, y, mainW, mainH, nodata: false };
+    } else return { nodata: true };
   },
 
   methods: {
@@ -201,7 +206,11 @@ export default {
   },
   created() {
     _this = this;
-    _this.start();
+    if (!_this.nodata) _this.start();
+    else
+      setTimeout((_) => {
+        _this.$router.go(-1);
+      }, 3000);
   },
   beforeDestroy() {
     _this.$once('hook:beforeDestroy', () => {
@@ -215,6 +224,7 @@ function compare(a, b) {
 </script>
 
 <style lang="less" scoped>
+@bodercoler: #1dfefe;
 .container {
   margin: 0 auto;
   min-height: 100vh;
@@ -319,6 +329,15 @@ function compare(a, b) {
       box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
       word-break: break-all;
     }
+  }
+  .nodata {
+    color: #fff;
+    width: 300px;
+    margin: 350px auto;
+    padding: 50px;
+    border-radius: 5px;
+    color: #64dbf3;
+    border: @bodercoler 2px solid;
   }
 }
 </style>
