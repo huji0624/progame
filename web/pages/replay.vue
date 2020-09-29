@@ -136,11 +136,12 @@ export default {
             _this.focusPlayers.includes(it.Name) && (it.isFocus = true);
             return it;
           });
+          //关注玩家排名靠前
           newA = newA.sort(compare);
           const item = {
             players: newA || [], //玩家属性
             pos: [j, i], //格子的坐标
-            gold: it.Gold, //金币
+            gold: it.Gold, //当前格子金币
           };
           afterArr.push(item);
         }
@@ -261,8 +262,8 @@ function compare(a, b) {
       }
       .focus {
         color: #fff;
-        background-color: #409eff;
-        border-color: #409eff;
+        background-color: #f56c6c;
+        border-color: #f56c6c;
       }
       .gold {
         width: 100px;

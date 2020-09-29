@@ -4,8 +4,8 @@
     <div class="list">
       <el-row class="rows">
         <el-col :span="6" v-for="(item, i) in tabs" :key="i">
-          <span class="name"> {{ item.label }}</span>
-          <el-row>
+          <div class="name">{{ item.label }}</div>
+          <el-row class="listbody">
             <div class="title">
               <el-row>
                 <el-col :span="8"> 名次 </el-col>
@@ -38,6 +38,8 @@
       <div class="btns">
         <span v-for="(item, i) in 42" :key="i">
           <el-button
+            type="primary"
+            plain
             v-if="Gid - i - 1 > 0"
             class="btn"
             @click="$router.push('/replay?gid=' + (Gid - i - 1))"
@@ -67,7 +69,7 @@ export default {
         { label: '第一次排名', name: 'First' },
         { label: '第二次排名', name: 'Second' },
         { label: '第三次排名', name: 'Third' },
-        { label: '总排名', name: 'Total' },
+        { label: '最终排名', name: 'Total' },
       ],
     };
   },
@@ -124,51 +126,69 @@ let compare = function (prop) {
 </script>
 
 <style lang="less" scoped>
+@bodercoler: #1dfefe;
 .main {
   margin: 0 auto;
   text-align: center;
   padding: 10px;
   font-size: 14px;
+  color: #fff;
   .head {
     padding: 10px;
     font-size: 20px;
   }
   .list {
-    padding: 20px 100px;
+    padding: 20px 160px;
     font-size: 16px;
     .name {
+      width: 94%;
+      color: #fff;
       font-size: 20px;
+      font-weight: bold;
       line-height: 48px;
+      background-color: #1d58db;
+      padding: 8px;
+      margin: 13px;
+      border-radius: 10px;
+      border: @bodercoler 2px solid;
     }
 
     .title {
-      background: #99a9bf;
-      color: #fff;
       line-height: 58px;
       margin: 3px;
+      font-weight: bold;
+      border-bottom: @bodercoler 2px dashed;
     }
     .rows {
-      color: #000;
-
-      background: #d3dce6;
+      background: #320a65;
+      opacity: 0.8;
       margin: 3px;
 
+      .listbody {
+        border: @bodercoler 2px solid;
+        margin: 10px;
+        color: #fff;
+        border-radius: 10px;
+        background: #320a65;
+      }
       .notstart {
         padding-top: 150px;
-        color: #666;
+        color: @bodercoler;
+        font-weight: bold;
       }
       .row {
         font-size: 16px;
-        height: 500px;
+        height: 400px;
         overflow: hidden auto;
         line-height: 60px;
         margin: 3px;
-        background: #e1e2e2;
 
         .item {
           margin: 3px;
-          background: #e5e9f2;
           // box-shadow: 0px 2px 10px 0px rgba(198, 198, 198, 0.5);
+        }
+        .item:hover {
+          background: #320a65;
         }
         .no {
           color: #fff;
@@ -180,17 +200,22 @@ let compare = function (prop) {
     }
   }
   .replay {
-    margin: 10px 100px;
+    margin: 10px 60px;
     padding: 10px;
-    background: #d3dce6;
+    background: #2f0365;
+    opacity: 0.8;
+    border-radius: 10px;
+    border: 7px #6ae5ee solid;
+    box-shadow: 0 0 10px #ee6a92;
     .title {
       line-height: 50px;
       font-size: 18px;
-      color: #656464;
+      color: #fff;
       text-align: left;
       margin-left: 10px;
       span {
         font-size: 13px;
+        color: #64dbf3;
       }
     }
     .btns {
@@ -199,6 +224,14 @@ let compare = function (prop) {
       .btn {
         width: 100px;
         margin: 5px 10px;
+        background: transparent;
+        color: #64dbf3;
+        border-color: #409eff;
+      }
+      .btn:hover {
+        color: #00378a;
+        background-color: #64dbf3;
+        border-color: #64dbf3;
       }
     }
   }
