@@ -1,6 +1,6 @@
 <template>
   <section class="main">
-    <div class="head">排行榜</div>
+    <div class="head"></div>
     <div class="list">
       <el-row class="rows">
         <el-col :span="6" v-for="(item, i) in tabs" :key="i">
@@ -35,7 +35,8 @@
     </div>
     <div class="replay">
       <div class="title">点击按钮查看当局回放 <span>仅展示最近42局</span></div>
-      <div class="btns">
+      <div v-if="Gid < 1" class="notstart">敬请期待</div>
+      <div v-else class="btns">
         <span v-for="(item, i) in 42" :key="i">
           <el-button
             type="primary"
@@ -88,7 +89,7 @@ export default {
     async init() {
       let res = await _this.$axios.get('rank');
       _this.All = res;
-      _this.Gid = res.Gid;
+      _this.Gid = res.Gid || 0;
     },
     onSort() {
       //排序，已废弃
@@ -126,7 +127,7 @@ let compare = function (prop) {
 </script>
 
 <style lang="less" scoped>
-@bodercoler: #1dfefe;
+@bodercoler: #1dffff;
 .main {
   margin: 0 auto;
   text-align: center;
@@ -134,12 +135,30 @@ let compare = function (prop) {
   font-size: 14px;
   color: #fff;
   .head {
-    padding: 10px;
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    margin: auto;
+    margin-top: 20px;
+    width: 448px;
+    height: 108px;
+    background-image: url('../assets/images/list.png');
+    background-size: 100% 100%;
+    // padding: 10px;
     font-size: 20px;
+    z-index: 10;
   }
   .list {
-    padding: 20px 160px;
+    padding: 40px 30px;
+    margin: 60px 160px;
     font-size: 16px;
+    background: #2f0365;
+    opacity: 0.8;
+    border-radius: 10px;
+    border: 7px @bodercoler solid;
+    box-shadow: 0 0 10px #ee6a92;
     .name {
       width: 94%;
       color: #fff;
@@ -200,7 +219,7 @@ let compare = function (prop) {
     }
   }
   .replay {
-    margin: 10px 60px;
+    margin: 50px 160px;
     padding: 10px;
     background: #2f0365;
     opacity: 0.8;
@@ -233,6 +252,11 @@ let compare = function (prop) {
         background-color: #64dbf3;
         border-color: #64dbf3;
       }
+    }
+    .notstart {
+      padding: 50px;
+      color: @bodercoler;
+      font-weight: bold;
     }
   }
 }

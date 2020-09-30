@@ -190,8 +190,10 @@ export default {
       } else _this.onStop();
     },
     onStop() {
-      clearInterval(_this.loopId);
-      _this.loopId = 0;
+      if (_this.loopId) {
+        clearInterval(_this.loopId);
+        _this.loopId = 0;
+      }
     },
     onCheckAll(val) {
       this.focusPlayers = val ? this.allPlayers : [];
@@ -230,6 +232,7 @@ function compare(a, b) {
   min-height: 100vh;
   text-align: center;
   padding: 10px;
+  color: #fff;
   .btns {
     margin: 50px;
 

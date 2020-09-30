@@ -16,7 +16,7 @@ export default {
    ** See https://nuxtjs.org/api/configuration-head
    */
   head: {
-    title: '程序员节',
+    title: '程序员节游戏',
     meta: [
       { charset: 'utf-8' },
       {
@@ -72,7 +72,7 @@ export default {
    */
   components: true,
   router: {
-    base: process.env.NODE_ENV === 'production' ? '/' : '/',
+    base: process.env.NODE_ENV === 'production' ? '/20201024' : '/',
     fallback: true,
   },
   /*
