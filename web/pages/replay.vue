@@ -4,12 +4,14 @@
     <div v-else>
       <el-page-header @back="$router.go(-1)" content="回放详情">
       </el-page-header>
-      <el-button @click="onPre()" type="primary" plain>上一轮</el-button>
-      <span> 第 {{ roundNo + 1 }} 轮</span>
-      <el-button @click="onNext()" type="primary" plain>下一轮</el-button>
-      <el-button @click="onAutoPlay()" type="primary" plain>
-        {{ loopId ? '停止播放' : '自动播放' }}
-      </el-button>
+      <span class="note"> 第 {{ roundNo + 1 }} 轮</span>
+      <div class="btns">
+        <span class="btn" @click="onPre()">上 一 轮</span>
+        <span class="btn" @click="onNext()">下 一 轮</span>
+        <span class="btn" @click="onAutoPlay()">
+          {{ loopId ? '停止播放' : '自动播放' }}
+        </span>
+      </div>
 
       <div class="main" :style="{ width: mainW + 'px', height: mainH + 'px' }">
         <div
@@ -30,24 +32,20 @@
         </div>
       </div>
       <div class="popover">
-        <el-popover
-          placement="top-start"
-          title="玩家信息"
-          width="270"
-          v-model="popShow"
-        >
+        <div class="conta">
+          <div class="tips">玩家信息</div>
           <div v-if="crtPos" class="crtPos">当前坐标：{{ crtPos }}</div>
           <div v-for="(it, i) in playersInfo" :key="i">
             {{ i + 1 }}、团队：<span class="name">{{ it.Name }}</span>
             金币：
             <span class="gold">{{ it.Gold }}</span>
           </div>
-        </el-popover>
+        </div>
       </div>
       <div class="playerlist">
         <div class="list">
-          选择你关注的游戏队伍
-          <br />
+          <div class="tips">选择你关注的游戏队伍</div>
+
           <el-checkbox
             :indeterminate="isIndeterminate"
             v-model="checkAll"
@@ -55,7 +53,12 @@
             >全选</el-checkbox
           >
           <!-- <div style="margin: 15px 0"></div> -->
-          <el-checkbox-group v-model="focusPlayers" @change="onChangePlayer">
+          <el-checkbox-group
+            v-model="focusPlayers"
+            :max="3"
+            text-color="#eee"
+            @change="onChangePlayer"
+          >
             <el-checkbox v-for="it in allPlayers" :label="it" :key="it">
               {{ it }}
             </el-checkbox>
@@ -79,7 +82,6 @@ export default {
     return {
       roundNo: 0,
       loopId: 0,
-      popShow: true,
       playerlistShow: true,
       playersInfo: [],
       crtPos: '',
@@ -108,8 +110,8 @@ export default {
         allRound.push(JSON.parse(it));
       });
       const { Wid: x, Hei: y } = allRound[0];
-      const mainW = x * 100 + 2,
-        mainH = y * 100 + 2;
+      const mainW = x * 100 + 14,
+        mainH = y * 100 + 14;
       return { allRound, x, y, mainW, mainH, nodata: false };
     } else return { nodata: true };
   },
@@ -160,8 +162,8 @@ export default {
       this.crtPos = it.pos;
     },
     mouseLeave() {
-      this.playersInfo = [];
-      this.crtPos = '';
+      // this.playersInfo = [];
+      // this.crtPos = '';
     },
     onNext() {
       if (this.roundNo < this.allRound.length - 1) this.roundNo++;
@@ -233,28 +235,44 @@ function compare(a, b) {
   text-align: center;
   padding: 10px;
   color: #fff;
+  .note {
+    font-weight: bold;
+    color: @bodercoler;
+  }
   .btns {
     margin: 50px;
 
     .btn {
-      width: 20%;
+      color: #04def0;
+      font-weight: bold;
+      font-family: '微软雅黑';
+      padding: 15px 32px;
+      margin: 0 10px;
+      background-image: url('../assets/images/btn.png');
+      background-size: 100% 100%;
+      cursor: pointer;
+    }
+    .btn:hover {
+      // background: #04def0;
+      color: #fff;
     }
   }
   .main {
     width: 702px;
-    background: cornsilk;
+    background: #330a66;
     box-shadow: 0 0 #333333;
-    border: 1px solid #888;
+    border-radius: 10px;
+    border: 7px @bodercoler solid;
     margin: 10px auto;
     box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
     .items {
       width: 100px;
       height: 100px;
       position: relative;
-      border: 1px solid #eee;
+      border: 1px solid @bodercoler;
       float: left;
       user-select: none;
-      background: #dedede;
+      background: #330a66;
       transition: all 0.2s;
       font-size: 14px;
       display: flex;
@@ -269,14 +287,14 @@ function compare(a, b) {
         margin: 3px;
         border-radius: 15px;
         z-index: 99;
-        color: #409eff;
-        background: #ecf5ff;
-        border-color: #b3d8ff;
+        color: #1eeaf0;
+        background: #635393;
+        border-color: #635393;
       }
       .focus {
-        color: #fff;
-        background-color: #f56c6c;
-        border-color: #f56c6c;
+        color: #0e025e;
+        background-color: #04def0;
+        border-color: #04def0;
       }
       .gold {
         width: 100px;
@@ -298,39 +316,59 @@ function compare(a, b) {
   }
   .popover {
     position: absolute;
-    top: 80px;
+    top: 170px;
     left: 20px;
-    .crtPos {
-      color: crimson;
-    }
-    .name {
-      font-weight: bold;
-      width: 150px;
-      color: #409eff;
-    }
-    .gold {
-      font-weight: bold;
-      color: #929a19;
-    }
-  }
-  .playerlist {
-    position: absolute;
-    top: 80px;
-    right: 20px;
     width: 300px;
-    .list {
-      position: absolute;
-      background: #fff;
-      min-width: 150px;
-      border: 1px solid #ebeef5;
+
+    .conta {
       padding: 12px;
       z-index: 2000;
-      color: #606266;
+      min-height: 150px;
       line-height: 1.4;
       text-align: justify;
       font-size: 14px;
       box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
       word-break: break-all;
+      border-radius: 10px;
+      border: 3px @bodercoler solid;
+      color: #1ceaee;
+      background: #1d0957;
+      .crtPos {
+        color: crimson;
+      }
+      .name {
+        font-weight: bold;
+        width: 150px;
+        color: #409eff;
+      }
+      .gold {
+        font-weight: bold;
+        color: #929a19;
+      }
+    }
+  }
+  .playerlist {
+    position: absolute;
+    top: 170px;
+    right: 20px;
+    width: 300px;
+    .list {
+      position: absolute;
+      min-width: 150px;
+      padding: 12px;
+      z-index: 2000;
+      width: 300px;
+      min-height: 150px;
+      line-height: 1.4;
+      text-align: justify;
+      font-size: 14px;
+      box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+      word-break: break-all;
+      border-radius: 10px;
+      border: 3px @bodercoler solid;
+
+      color: #1ceaee;
+      background: #1d0957;
     }
   }
   .nodata {
@@ -342,5 +380,30 @@ function compare(a, b) {
     color: #64dbf3;
     border: @bodercoler 2px solid;
   }
+  .tips {
+    font-size: 20px;
+    font-weight: bold;
+  }
+}
+</style>
+
+<style lang="less">
+.el-checkbox__input.is-checked .el-checkbox__inner {
+  background-color: #04def0;
+  border-color: #04def0;
+}
+.el-checkbox__input.is-checked + .el-checkbox__label {
+  color: #04def0;
+}
+.el-checkbox {
+  color: #04def0;
+}
+.el-checkbox__input.is-indeterminate .el-checkbox__inner {
+  background-color: #04def0;
+  border-color: #04def0;
+}
+.el-page-header__content {
+  font-size: 18px;
+  color: #04def0;
 }
 </style>

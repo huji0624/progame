@@ -18,7 +18,22 @@
               <div v-else>
                 <el-row class="item" v-for="(it, i) in All[item.name]" :key="i">
                   <el-col :span="8">
-                    <div :class="i < 3 ? 'no' : ''">{{ i + 1 }}</div>
+                    <img
+                      class="img"
+                      v-if="i == 0"
+                      src="../assets/images/1.png"
+                    />
+                    <img
+                      class="img"
+                      v-if="i == 1"
+                      src="../assets/images/2.png"
+                    />
+                    <img
+                      class="img"
+                      v-if="i == 2"
+                      src="../assets/images/3.png"
+                    />
+                    <div v-if="i > 2">{{ i + 1 }}</div>
                   </el-col>
                   <el-col :span="8">
                     {{ it.Name }}
@@ -34,10 +49,10 @@
       </el-row>
     </div>
     <div class="replay">
-      <div class="title">点击按钮查看当局回放 <span>仅展示最近42局</span></div>
+      <div class="title">点击按钮查看当局回放 <span>仅展示最近39局</span></div>
       <div v-if="Gid < 1" class="notstart">敬请期待</div>
       <div v-else class="btns">
-        <span v-for="(item, i) in 42" :key="i">
+        <span v-for="(item, i) in 39" :key="i">
           <el-button
             type="primary"
             plain
@@ -155,7 +170,7 @@ let compare = function (prop) {
     margin: 60px 160px;
     font-size: 16px;
     background: #2f0365;
-    opacity: 0.8;
+    opacity: 0.9;
     border-radius: 10px;
     border: 7px @bodercoler solid;
     box-shadow: 0 0 10px #ee6a92;
@@ -180,7 +195,7 @@ let compare = function (prop) {
     }
     .rows {
       background: #320a65;
-      opacity: 0.8;
+      opacity: 1;
       margin: 3px;
 
       .listbody {
@@ -205,6 +220,9 @@ let compare = function (prop) {
         .item {
           margin: 3px;
           // box-shadow: 0px 2px 10px 0px rgba(198, 198, 198, 0.5);
+          .img {
+            padding-top: 10px;
+          }
         }
         .item:hover {
           background: #320a65;
@@ -219,10 +237,10 @@ let compare = function (prop) {
     }
   }
   .replay {
-    margin: 50px 160px;
-    padding: 10px;
+    margin: 30px 160px 0;
+    padding: 15px;
     background: #2f0365;
-    opacity: 0.8;
+    opacity: 0.95;
     border-radius: 10px;
     border: 7px @bodercoler solid;
     box-shadow: 0 0 10px #ee6a92;
@@ -242,7 +260,7 @@ let compare = function (prop) {
 
       .btn {
         width: 100px;
-        margin: 5px 10px;
+        margin: 5px 9px;
         background: transparent;
         color: #64dbf3;
         border-color: #409eff;
