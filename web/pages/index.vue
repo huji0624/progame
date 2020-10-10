@@ -49,10 +49,10 @@
       </el-row>
     </div>
     <div class="replay">
-      <div class="title">点击按钮查看当局回放 <span>仅展示最近39局</span></div>
+      <div class="title">点击按钮查看当局回放 <span>仅展示最近30局</span></div>
       <div v-if="Gid < 1" class="notstart">敬请期待</div>
       <div v-else class="btns">
-        <span v-for="(item, i) in 39" :key="i">
+        <span v-for="(item, i) in 30" :key="i">
           <el-button
             type="primary"
             plain
@@ -156,7 +156,7 @@ let compare = function (prop) {
     top: 0;
     bottom: 0;
     margin: auto;
-    margin-top: 20px;
+    margin-top: 0;
     width: 448px;
     height: 108px;
     background-image: url('../assets/images/list.png');
@@ -166,8 +166,8 @@ let compare = function (prop) {
     z-index: 10;
   }
   .list {
-    padding: 40px 30px;
-    margin: 60px 160px;
+    padding: 40px 20px 20px;
+    margin: 40px 175px 5px;
     font-size: 16px;
     background: #2f0365;
     opacity: 0.9;
@@ -181,8 +181,8 @@ let compare = function (prop) {
       font-weight: bold;
       line-height: 48px;
       background-color: #1d58db;
-      padding: 8px;
-      margin: 13px;
+      padding: 5px;
+      margin: 11px;
       border-radius: 10px;
       border: @bodercoler 2px solid;
     }
@@ -212,9 +212,9 @@ let compare = function (prop) {
       }
       .row {
         font-size: 16px;
-        height: 400px;
+        height: 390px;
         overflow: hidden auto;
-        line-height: 60px;
+        line-height: 50px;
         margin: 3px;
 
         .item {
@@ -237,7 +237,7 @@ let compare = function (prop) {
     }
   }
   .replay {
-    margin: 30px 160px 0;
+    margin: 30px 175px 0;
     padding: 15px;
     background: #2f0365;
     opacity: 0.95;
@@ -245,7 +245,7 @@ let compare = function (prop) {
     border: 7px @bodercoler solid;
     box-shadow: 0 0 10px #ee6a92;
     .title {
-      line-height: 50px;
+      line-height: 40px;
       font-size: 18px;
       color: #fff;
       text-align: left;
@@ -259,8 +259,8 @@ let compare = function (prop) {
       text-align: left;
 
       .btn {
-        width: 100px;
-        margin: 5px 9px;
+        width: 120px;
+        margin: 5px 15px;
         background: transparent;
         color: #64dbf3;
         border-color: #409eff;
