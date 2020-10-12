@@ -290,7 +290,7 @@ func MovePlayer(g *Game, player *Player, x int, y int) {
 }
 
 func CheckGameOver(g *Game) bool {
-	if g.RoundID == 10 {
+	if g.RoundID == 100 {
 		return true
 	}
 
@@ -648,7 +648,7 @@ func rankHandler(w http.ResponseWriter, r *http.Request) {
 
 	ret := &Rank{}
 
-	pathes := [4]string{"total.json", "first.json", "second.json", "third.json"}
+	pathes := [4]string{"first.json", "second.json", "third.json"}
 
 	for _, v := range pathes {
 		tpath := recordsPath + "/" + v
@@ -659,8 +659,6 @@ func rankHandler(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				log.Println("err read rank.")
 				return
-			} else if v == "total.json" {
-				ret.Total = result.Sorted
 			} else if v == "first.json" {
 				ret.First = result.Sorted
 			} else if v == "second.json" {
@@ -671,13 +669,7 @@ func rankHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if ret.First == nil {
-		ret.First = records.Sorted
-	} else if ret.Second == nil {
-		ret.Second = records.Sorted
-	} else if ret.Third == nil {
-		ret.Third = records.Sorted
-	}
+	ret.Total = records.Sorted
 
 	ret.Gid = g_game.GameID
 
