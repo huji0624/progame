@@ -1,49 +1,77 @@
 <template>
   <div class="container">
-    <el-page-header @back="$router.go(-1)" content="回放详情"> </el-page-header>
-    <el-button @click="onPre()" type="primary" plain>上一轮</el-button>
-    <span> 第 {{ roundNo + 1 }} 轮</span>
-    <el-button @click="onNext()" type="primary" plain>下一轮</el-button>
-    <el-button @click="onAutoPlay()" type="primary" plain>
-      {{ loopId ? '停止播放' : '自动播放' }}
-    </el-button>
+    <div v-if="nodata" class="nodata">该局游戏不存在</div>
+    <div v-else>
+      <el-page-header @back="$router.go(-1)" content="回放详情">
+      </el-page-header>
+      <span class="note"> 第 {{ roundNo + 1 }} 轮</span>
+      <div class="btns">
+        <span class="btn" @click="onPre()">上 一 轮</span>
+        <span class="btn" @click="onNext()">下 一 轮</span>
+        <span class="btn" @click="onAutoPlay()">
+          {{ loopId ? '停止播放' : '自动播放' }}
+        </span>
+      </div>
 
-    <div class="main" :style="{ width: mainW + 'px', height: mainH + 'px' }">
-      <div
-        @mouseover="mouseOver(it)"
-        @mouseleave="mouseLeave()"
-        class="items"
-        v-for="(it, i) in total"
-        :key="i"
-      >
-        <div class="gold">{{ it.gold }}</div>
-        <div v-if="it.players">
-          <div v-for="(it, i) in it.players" :key="i">
-            <div class="item" v-if="i < 3">{{ it.Name }} - {{ it.Gold }}</div>
+      <div class="main" :style="{ width: mainW + 'px', height: mainH + 'px' }">
+        <div
+          @mouseover="mouseOver(it)"
+          @mouseleave="mouseLeave()"
+          class="items"
+          v-for="(it, i) in total"
+          :key="i"
+        >
+          <div class="gold">{{ it.gold }}</div>
+          <div v-if="it.players">
+            <div v-for="(it, i) in it.players" :key="i">
+              <div class="item" :class="{ focus: it.isFocus }" v-if="i < 3">
+                {{ it.Name }} - {{ it.Gold }}
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-    <div class="popover">
-      <el-popover
-        placement="top-start"
-        title="玩家信息"
-        width="270"
-        v-model="popShow"
-      >
-        <div v-if="crtPos" class="crtPos">当前坐标：{{ crtPos }}</div>
-        <div v-for="(it, i) in playersInfo" :key="i">
-          {{ i + 1 }}、团队：<span class="name">{{ it.Name }}</span>
-          金币：
-          <span class="gold">{{ it.Gold }}</span>
+      <div class="popover">
+        <div class="conta">
+          <div class="tips">玩家信息</div>
+          <div v-if="crtPos" class="crtPos">当前坐标：{{ crtPos }}</div>
+          <div v-for="(it, i) in playersInfo" :key="i">
+            {{ i + 1 }}、团队：<span class="name">{{ it.Name }}</span>
+            金币：
+            <span class="gold">{{ it.Gold }}</span>
+          </div>
         </div>
-      </el-popover>
+      </div>
+      <div class="playerlist">
+        <div class="list">
+          <div class="tips">选择你关注的游戏队伍</div>
+
+          <el-checkbox
+            :indeterminate="isIndeterminate"
+            v-model="checkAll"
+            @change="onCheckAll"
+            >全选</el-checkbox
+          >
+          <!-- <div style="margin: 15px 0"></div> -->
+          <el-checkbox-group
+            v-model="focusPlayers"
+            :max="3"
+            text-color="#eee"
+            @change="onChangePlayer"
+          >
+            <el-checkbox v-for="it in allPlayers" :label="it" :key="it">
+              {{ it }}
+            </el-checkbox>
+          </el-checkbox-group>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
 let _this;
+const allPlayers = [];
 export default {
   head() {
     return {
@@ -54,11 +82,17 @@ export default {
     return {
       roundNo: 0,
       loopId: 0,
-      popShow: true,
+      playerlistShow: true,
       playersInfo: [],
       crtPos: '',
       players: [],
       total: [],
+
+      isFirst: true,
+      checkAll: false,
+      focusPlayers: [],
+      isIndeterminate: false,
+      allPlayers: [],
     };
   },
   watch: {
@@ -70,20 +104,21 @@ export default {
     const data = { gid: query.gid };
     const res = await app.$axios.get('game', { params: data });
 
-    let allRound = [];
-    res.forEach((it) => {
-      allRound.push(JSON.parse(it));
-    });
-    const { Wid: x, Hei: y } = allRound[0];
-    const mainW = x * 100 + 2,
-      mainH = y * 100 + 2;
-
-    return { allRound, x, y, mainW, mainH };
+    if (res instanceof Array) {
+      let allRound = [];
+      res.forEach((it) => {
+        allRound.push(JSON.parse(it));
+      });
+      const { Wid: x, Hei: y } = allRound[0];
+      const mainW = x * 100 + 14,
+        mainH = y * 100 + 14;
+      return { allRound, x, y, mainW, mainH, nodata: false };
+    } else return { nodata: true };
   },
 
   methods: {
     start() {
-      let { x, y, players, roundNo, allRound } = this;
+      let { x, y, players, roundNo, allRound, focusPlayers } = this;
       if (roundNo > allRound.length - 1) {
         return false;
       }
@@ -95,14 +130,30 @@ export default {
       for (let i = 0; i < y; i++) {
         for (let j = 0; j < x; j++) {
           const it = tilemap[i][j];
+          const maps = it.Players || [];
+          let newA = [];
+          //只有第一次进来才遍历全部玩家
+          if (this.isFirst && it.Players) {
+            maps.map((it) => {
+              this.allPlayers.push(it.Name);
+            });
+          }
+          //添加关注玩家
+          newA = maps.map((it) => {
+            _this.focusPlayers.includes(it.Name) && (it.isFocus = true);
+            return it;
+          });
+          //关注玩家排名靠前
+          newA = newA.sort(compare);
           const item = {
-            players: it.Players || [], //玩家属性
+            players: newA || [], //玩家属性
             pos: [j, i], //格子的坐标
-            gold: it.Gold, //金币
+            gold: it.Gold, //当前格子金币
           };
           afterArr.push(item);
         }
       }
+      this.isFirst = false;
       this.total = afterArr;
     },
 
@@ -111,8 +162,8 @@ export default {
       this.crtPos = it.pos;
     },
     mouseLeave() {
-      this.playersInfo = [];
-      this.crtPos = '';
+      // this.playersInfo = [];
+      // this.crtPos = '';
     },
     onNext() {
       if (this.roundNo < this.allRound.length - 1) this.roundNo++;
@@ -141,13 +192,29 @@ export default {
       } else _this.onStop();
     },
     onStop() {
-      clearInterval(_this.loopId);
-      _this.loopId = 0;
+      if (_this.loopId) {
+        clearInterval(_this.loopId);
+        _this.loopId = 0;
+      }
+    },
+    onCheckAll(val) {
+      this.focusPlayers = val ? this.allPlayers : [];
+      this.isIndeterminate = false;
+    },
+    onChangePlayer(value) {
+      let checkedCount = value.length;
+      this.checkAll = checkedCount === this.allPlayers.length;
+      this.isIndeterminate =
+        checkedCount > 0 && checkedCount < this.allPlayers.length;
     },
   },
   created() {
     _this = this;
-    _this.start();
+    if (!_this.nodata) _this.start();
+    else
+      setTimeout((_) => {
+        _this.$router.go(-1);
+      }, 3000);
   },
   beforeDestroy() {
     _this.$once('hook:beforeDestroy', () => {
@@ -155,35 +222,57 @@ export default {
     });
   },
 };
+function compare(a, b) {
+  if (a.isFocus && !b.isFocus) return -1;
+}
 </script>
 
 <style lang="less" scoped>
+@bodercoler: #1dfefe;
 .container {
   margin: 0 auto;
   min-height: 100vh;
   text-align: center;
   padding: 10px;
+  color: #fff;
+  .note {
+    font-weight: bold;
+    color: @bodercoler;
+  }
   .btns {
     margin: 50px;
 
     .btn {
-      width: 20%;
+      color: #04def0;
+      font-weight: bold;
+      font-family: '微软雅黑';
+      padding: 15px 32px;
+      margin: 0 10px;
+      background-image: url('../assets/images/btn.png');
+      background-size: 100% 100%;
+      cursor: pointer;
+    }
+    .btn:hover {
+      // background: #04def0;
+      color: #fff;
     }
   }
   .main {
     width: 702px;
-    background: cornsilk;
+    background: #330a66;
     box-shadow: 0 0 #333333;
-    border: 1px solid #888;
+    border-radius: 10px;
+    border: 7px @bodercoler solid;
     margin: 10px auto;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
     .items {
       width: 100px;
       height: 100px;
       position: relative;
-      border: 1px solid #eee;
+      border: 1px solid @bodercoler;
       float: left;
       user-select: none;
-      background: #dedede;
+      background: #330a66;
       transition: all 0.2s;
       font-size: 14px;
       display: flex;
@@ -198,9 +287,14 @@ export default {
         margin: 3px;
         border-radius: 15px;
         z-index: 99;
-        color: #409eff;
-        background: #ecf5ff;
-        border-color: #b3d8ff;
+        color: #1eeaf0;
+        background: #635393;
+        border-color: #635393;
+      }
+      .focus {
+        color: #0e025e;
+        background-color: #04def0;
+        border-color: #04def0;
       }
       .gold {
         width: 100px;
@@ -222,20 +316,94 @@ export default {
   }
   .popover {
     position: absolute;
-    top: 80px;
+    top: 170px;
     left: 20px;
-    .crtPos {
-      color: crimson;
-    }
-    .name {
-      font-weight: bold;
-      width: 150px;
-      color: #409eff;
-    }
-    .gold {
-      font-weight: bold;
-      color: #929a19;
+    width: 300px;
+
+    .conta {
+      padding: 12px;
+      z-index: 2000;
+      min-height: 150px;
+      line-height: 1.4;
+      text-align: justify;
+      font-size: 14px;
+      box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+      word-break: break-all;
+      border-radius: 10px;
+      border: 3px @bodercoler solid;
+      color: #1ceaee;
+      background: #1d0957;
+      .crtPos {
+        color: crimson;
+      }
+      .name {
+        font-weight: bold;
+        width: 150px;
+        color: #409eff;
+      }
+      .gold {
+        font-weight: bold;
+        color: #929a19;
+      }
     }
   }
+  .playerlist {
+    position: absolute;
+    top: 170px;
+    right: 20px;
+    width: 300px;
+    .list {
+      position: absolute;
+      min-width: 150px;
+      padding: 12px;
+      z-index: 2000;
+      width: 300px;
+      min-height: 150px;
+      line-height: 1.4;
+      text-align: justify;
+      font-size: 14px;
+      box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+      word-break: break-all;
+      border-radius: 10px;
+      border: 3px @bodercoler solid;
+
+      color: #1ceaee;
+      background: #1d0957;
+    }
+  }
+  .nodata {
+    color: #fff;
+    width: 300px;
+    margin: 350px auto;
+    padding: 50px;
+    border-radius: 5px;
+    color: #64dbf3;
+    border: @bodercoler 2px solid;
+  }
+  .tips {
+    font-size: 20px;
+    font-weight: bold;
+  }
+}
+</style>
+
+<style lang="less">
+.el-checkbox__input.is-checked .el-checkbox__inner {
+  background-color: #04def0;
+  border-color: #04def0;
+}
+.el-checkbox__input.is-checked + .el-checkbox__label {
+  color: #04def0;
+}
+.el-checkbox {
+  color: #04def0;
+}
+.el-checkbox__input.is-indeterminate .el-checkbox__inner {
+  background-color: #04def0;
+  border-color: #04def0;
+}
+.el-page-header__content {
+  font-size: 18px;
+  color: #04def0;
 }
 </style>

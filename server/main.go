@@ -142,12 +142,6 @@ func KickPlayer(p *Player) {
 	log.Println("kick player:", p.token)
 }
 
-type Tile struct {
-	Gold    int
-	P       []*GameScore `json:"Players,omitempty"`
-	players map[string]*Player
-}
-
 const (
 	MapWidth  = 10
 	MapHeight = 6
@@ -274,14 +268,20 @@ func MovePlayer(g *Game, player *Player, x int, y int) {
 
 	//player move cost gold.And get one gold if not move.
 	step := AbsI(x-info.X) + AbsI(y-info.Y)
+
+	//check if move out of the map.dont move at all.
+	if x < 0 || y < 0 || x >= g.Wid || y >= g.Hei {
+		step = 0
+	}
+
 	if step == 0 {
 		log.Println("Player not moving!", player.token, x, ",", y)
-		player.Info.Gold++
+		player.Info.Gold--
 		return
 	} else if step < info.Gold {
 		player.Info.Gold = player.Info.Gold - step
 	} else {
-		player.Info.Gold++
+		player.Info.Gold--
 		log.Println("Gold not enough!", player.token)
 		return
 	}
@@ -297,10 +297,19 @@ func CheckGameOver(g *Game) bool {
 	return false
 }
 
+type Tile struct {
+	Gold    int
+	P       []*GameScore `json:"Players,omitempty"`
+	players map[string]*Player
+}
+
 func ApplyGameLogic(g *Game) {
+
 	for i := 0; i < MapWidth; i++ {
 		for j := 0; j < MapHeight; j++ {
 			t := g.Tilemap[j][i]
+
+			//randomly give gold to one player
 			if t.Gold > 0 && len(t.players) > 0 {
 				tmp := make([]*Player, 0, 3)
 				for _, v := range t.players {
@@ -312,11 +321,45 @@ func ApplyGameLogic(g *Game) {
 				p.Info.Gold += t.Gold
 				t.Gold = 0
 			}
+
+			//who has more gold will give 1 gold to others
+			if len(t.players) > 1 {
+				mostGold := -1
+				mostGoldCount := 0
+				for _, v := range t.players {
+					if v.Info.Gold > mostGold {
+						mostGold = v.Info.Gold
+						mostGoldCount = 1
+					} else if v.Info.Gold == mostGold {
+						mostGoldCount++
+					}
+				}
+				left := len(t.players) - mostGoldCount
+				if left > 0 {
+					for _, v := range t.players {
+						if v.Info.Gold == mostGold {
+							v.Info.Gold = v.Info.Gold - left
+						} else {
+							v.Info.Gold = v.Info.Gold + mostGoldCount
+						}
+					}
+				}
+			}
 		}
+	}
+
+	for _, v := range connections {
+		v.Info.Gold = v.Info.Gold + v.Info.Gold/10*1
 	}
 }
 
 func RandomGenGold(g *Game) {
+
+	//1 gold each round.
+	for _, v := range connections {
+		v.Info.Gold++
+	}
+
 	n := len(connections)
 	for i := 0; i < n; i++ {
 		r := rand.Intn(MapWidth + MapHeight)
