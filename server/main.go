@@ -304,6 +304,7 @@ type Tile struct {
 }
 
 func ApplyGameLogic(g *Game) {
+
 	for i := 0; i < MapWidth; i++ {
 		for j := 0; j < MapHeight; j++ {
 			t := g.Tilemap[j][i]
@@ -346,9 +347,19 @@ func ApplyGameLogic(g *Game) {
 			}
 		}
 	}
+
+	for _, v := range connections {
+		v.Info.Gold = v.Info.Gold + v.Info.Gold/10*1
+	}
 }
 
 func RandomGenGold(g *Game) {
+
+	//1 gold each round.
+	for _, v := range connections {
+		v.Info.Gold++
+	}
+
 	n := len(connections)
 	for i := 0; i < n; i++ {
 		r := rand.Intn(MapWidth + MapHeight)
