@@ -73,7 +73,7 @@ let _this;
 export default {
   head() {
     return {
-      title: '金币作战排行榜',
+      title: '排行榜 - 2020程序员节日游戏',
     };
   },
   data() {
@@ -82,10 +82,10 @@ export default {
       All: {},
       Gid: 0,
       tabs: [
+        { label: '当前得分', name: 'Total' },
         { label: '第一次排名', name: 'First' },
         { label: '第二次排名', name: 'Second' },
         { label: '第三次排名', name: 'Third' },
-        { label: '最终排名', name: 'Total' },
       ],
     };
   },

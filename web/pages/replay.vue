@@ -75,7 +75,7 @@ const allPlayers = [];
 export default {
   head() {
     return {
-      title: '程序员节日活动',
+      title: '游戏回放 - 2020程序员节日游戏',
     };
   },
   data() {
