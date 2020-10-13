@@ -338,7 +338,7 @@ func ApplyGameLogic(g *Game) {
 				t.Gold = 0
 			}
 
-			//who has more gold will give 1/3 of his gold to others
+			//who has more gold will give 1/4 of his gold to others
 			if len(t.players) > 1 {
 				mostGold := -1
 				mostGoldCount := 0
@@ -353,7 +353,7 @@ func ApplyGameLogic(g *Game) {
 				}
 				poor := len(t.players) - mostGoldCount
 				if poor > 0 {
-					give := mostGold / 3
+					give := mostGold / 4
 					each := give / poor
 					if each > 0 {
 						for _, v := range t.players {
