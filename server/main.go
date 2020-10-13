@@ -103,7 +103,14 @@ func echo(w http.ResponseWriter, r *http.Request) {
 	} else {
 		if jmsg.Msgtype == 0 {
 			allowed := false
-			name, ok := tokenmap[jmsg.Token]
+			name := ""
+			ok := false
+			if tokenmap == nil {
+				name = jmsg.Token
+				ok = true
+			} else {
+				name, ok = tokenmap[jmsg.Token]
+			}
 			if ok {
 				_, online := prepares[name]
 				if !online {
@@ -143,7 +150,7 @@ func KickPlayer(p *Player) {
 }
 
 const (
-	MapWidth  = 10
+	MapWidth  = 8
 	MapHeight = 6
 )
 
@@ -173,6 +180,13 @@ func initGame(g *Game) {
 			t.players = make(map[string]*Player, 0)
 			g.Tilemap[j][i] = t
 		}
+	}
+
+	if records.Moves == nil {
+		records.Moves = make(map[string]int)
+	}
+	if records.Gives == nil {
+		records.Gives = make(map[string]int)
 	}
 
 	for token, v := range connections {
@@ -286,11 +300,13 @@ func MovePlayer(g *Game, player *Player, x int, y int) {
 		return
 	}
 
+	records.Moves[player.Info.Key] = records.Moves[player.Info.Key] + step
+
 	MovePlayerForce(g, player, x, y)
 }
 
 func CheckGameOver(g *Game) bool {
-	if g.RoundID == 100 {
+	if g.RoundID == 120 {
 		return true
 	}
 
@@ -322,11 +338,12 @@ func ApplyGameLogic(g *Game) {
 				t.Gold = 0
 			}
 
-			//who has more gold will give 1 gold to others
+			//who has more gold will give 1/3 of his gold to others
 			if len(t.players) > 1 {
 				mostGold := -1
 				mostGoldCount := 0
 				for _, v := range t.players {
+					// log.Println("player : ", v.Info.Key, " = ", v.Info.Gold)
 					if v.Info.Gold > mostGold {
 						mostGold = v.Info.Gold
 						mostGoldCount = 1
@@ -334,13 +351,18 @@ func ApplyGameLogic(g *Game) {
 						mostGoldCount++
 					}
 				}
-				left := len(t.players) - mostGoldCount
-				if left > 0 {
-					for _, v := range t.players {
-						if v.Info.Gold == mostGold {
-							v.Info.Gold = v.Info.Gold - left
-						} else {
-							v.Info.Gold = v.Info.Gold + mostGoldCount
+				poor := len(t.players) - mostGoldCount
+				if poor > 0 {
+					give := mostGold / 3
+					each := give / poor
+					if each > 0 {
+						for _, v := range t.players {
+							if v.Info.Gold == mostGold {
+								v.Info.Gold = v.Info.Gold - poor*each
+								records.Gives[v.Info.Key] = records.Gives[v.Info.Key] + poor*each
+							} else {
+								v.Info.Gold = v.Info.Gold + mostGoldCount*each
+							}
 						}
 					}
 				}
@@ -360,9 +382,9 @@ func RandomGenGold(g *Game) {
 		v.Info.Gold++
 	}
 
-	n := len(connections)
+	n := MapHeight * MapWidth / 6
 	for i := 0; i < n; i++ {
-		r := rand.Intn(MapWidth + MapHeight)
+		r := rand.Intn(4)
 
 		x := rand.Intn(MapWidth)
 		y := rand.Intn(MapHeight)
@@ -382,7 +404,7 @@ func ReadLoop(p *Player, token string) {
 		jmsg := Msg{}
 		err := p.c.ReadJSON(&jmsg)
 		// log.Println("read loop:")
-		LogStruct(jmsg)
+		// LogStruct(jmsg)
 		if err == nil {
 			p.rc <- &jmsg
 		} else {
@@ -560,6 +582,9 @@ type GameRank struct {
 
 	Index  int
 	Scores map[int]map[string]int
+
+	Moves map[string]uint64
+	Gives map[string]uint64
 }
 
 type GameScore struct {
@@ -577,10 +602,15 @@ type Rank struct {
 
 func setupresponse(w http.ResponseWriter, req *http.Request) {
 	if origin := req.Header.Get("Origin"); origin != "" {
+		log.Println("origin is :", origin)
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
 		w.Header().Set("Access-Control-Allow-Origin", origin)
 		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 		w.Header().Set("Access-Control-Allow-Headers",
 			"Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+	} else {
+		log.Println("origin is nil.")
+		log.Println(origin)
 	}
 }
 
@@ -618,7 +648,6 @@ func saveHandler(w http.ResponseWriter, r *http.Request) {
 	token := r.Form.Get("token")
 	name := r.Form.Get("name")
 	switch name {
-	case "total":
 	case "first":
 	case "second":
 	case "third":
@@ -648,14 +677,18 @@ func rankHandler(w http.ResponseWriter, r *http.Request) {
 
 	ret := &Rank{}
 
-	pathes := [4]string{"first.json", "second.json", "third.json"}
+	pathes := [3]string{"first.json", "second.json", "third.json"}
 
 	for _, v := range pathes {
 		tpath := recordsPath + "/" + v
 		if r, _ := exists(tpath); r {
 			result := &GameRank{}
-			b, _ := ioutil.ReadFile(tpath)
-			err := json.Unmarshal(b, result)
+			b, err := ioutil.ReadFile(tpath)
+			if err != nil {
+				log.Println("err read file:", err)
+				continue
+			}
+			err = json.Unmarshal(b, result)
 			if err != nil {
 				log.Println("err read rank.")
 				return
@@ -700,7 +733,7 @@ func main() {
 		json.Unmarshal(b, &tokenmap)
 		LogStruct(tokenmap)
 	} else {
-		tokenmap = make(map[string]string)
+		tokenmap = nil
 	}
 
 	go GameLoop()
