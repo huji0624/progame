@@ -183,10 +183,10 @@ func initGame(g *Game) {
 	}
 
 	if records.Moves == nil {
-		records.Moves = make(map[string]int)
+		records.Moves = make(map[string]uint64)
 	}
 	if records.Gives == nil {
-		records.Gives = make(map[string]int)
+		records.Gives = make(map[string]uint64)
 	}
 
 	for token, v := range connections {
@@ -300,7 +300,7 @@ func MovePlayer(g *Game, player *Player, x int, y int) {
 		return
 	}
 
-	records.Moves[player.Info.Key] = records.Moves[player.Info.Key] + step
+	records.Moves[player.Info.Key] = records.Moves[player.Info.Key] + uint64(step)
 
 	MovePlayerForce(g, player, x, y)
 }
@@ -359,7 +359,7 @@ func ApplyGameLogic(g *Game) {
 						for _, v := range t.players {
 							if v.Info.Gold == mostGold {
 								v.Info.Gold = v.Info.Gold - poor*each
-								records.Gives[v.Info.Key] = records.Gives[v.Info.Key] + poor*each
+								records.Gives[v.Info.Key] = records.Gives[v.Info.Key] + uint64(poor*each)
 							} else {
 								v.Info.Gold = v.Info.Gold + mostGoldCount*each
 							}
