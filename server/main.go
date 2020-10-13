@@ -746,5 +746,5 @@ func main() {
 	http.Handle("/", http.FileServer(http.Dir("../web/dist")))
 	http.HandleFunc("/ws", echo)
 	log.Println("ws server ready...")
-	log.Fatal(http.ListenAndServe("0.0.0.0:8888", nil))
+	log.Fatal(http.ListenAndServe("0.0.0.0:8881", nil))
 }
