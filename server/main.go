@@ -11,6 +11,7 @@ import (
 	"os"
 	"sort"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -84,6 +85,8 @@ func WaitForMsg(c *websocket.Conn, v interface{}) error {
 	return err
 }
 
+var mutex sync.Mutex
+
 func echo(w http.ResponseWriter, r *http.Request) {
 	log.Println("new connection..")
 
@@ -111,6 +114,10 @@ func echo(w http.ResponseWriter, r *http.Request) {
 			} else {
 				name, ok = tokenmap[jmsg.Token]
 			}
+
+			mutex.Lock()
+			defer mutex.Unlock()
+
 			if ok {
 				_, online := prepares[name]
 				if !online {
@@ -123,7 +130,7 @@ func echo(w http.ResponseWriter, r *http.Request) {
 			}
 
 			if allowed {
-				rc := make(chan *Msg)
+				rc := make(chan *Msg, 200)
 				p := &Player{c: c, rc: rc}
 				p.token = name
 				prepares[name] = p
@@ -134,6 +141,7 @@ func echo(w http.ResponseWriter, r *http.Request) {
 				WriteToClient(c, &jmsg)
 				c.Close()
 			}
+
 		} else {
 			jmsg.Msgtype = -1
 			WriteToClient(c, &jmsg)
@@ -143,10 +151,11 @@ func echo(w http.ResponseWriter, r *http.Request) {
 }
 
 func KickPlayer(p *Player) {
+	log.Println("will kick player:", p.token)
 	p.c.Close()
 	delete(connections, p.token)
 	delete(prepares, p.token)
-	log.Println("kick player:", p.token)
+	log.Println("did kick player:", p.token)
 }
 
 const (
@@ -406,10 +415,14 @@ func ReadLoop(p *Player, token string) {
 		// log.Println("read loop:")
 		// LogStruct(jmsg)
 		if err == nil {
-			p.rc <- &jmsg
+			if p.rc != nil {
+				p.rc <- &jmsg
+			} else {
+				log.Println("channel nil.wait next...")
+			}
 		} else {
-			log.Println("read token:", token, " err:", err, " player will not move.")
-			KickPlayer(p)
+			log.Println("ReadLoop read token:", token, " err:", err, " player will not move.")
+			close(p.rc)
 			break
 		}
 	}
@@ -429,7 +442,7 @@ func PlayGameRounds(game *Game) {
 		gmsg := pubGameMap(game)
 		game.roundRecords = append(game.roundRecords, string(gmsg))
 
-		time.Sleep(time.Second / 2)
+		time.Sleep(time.Second)
 
 		//wait for move
 		for _, v := range connections {
@@ -499,6 +512,14 @@ func GameLoop() {
 
 		game.status = 0
 		log.Println("prepare for next game.")
+		//recreate channel
+		for _, v := range prepares {
+			trc := v.rc
+			v.rc = nil
+			close(trc)
+			v.rc = make(chan *Msg, 200)
+		}
+
 		//prepare
 		jmsg := Msg{}
 		jmsg.Msgtype = 1
@@ -507,19 +528,26 @@ func GameLoop() {
 			WriteToClient(v.c, jmsg)
 		}
 
-		time.Sleep(time.Second)
+		time.Sleep(time.Second * 3)
 
 		log.Println("wait for response.")
 		connections = make(map[string]*Player)
 		//prepare response
 		jmsg = Msg{}
 		for token, v := range prepares {
-			msg, ok := <-v.rc
-			if ok && msg.Msgtype == 2 {
-				log.Println("player is ready:", token)
+			log.Println("check ready:", token)
 
-				connections[v.token] = v
-			} else {
+			select {
+			case msg, ok := <-v.rc:
+				if ok && msg.Msgtype == 2 {
+					log.Println("player is ready:", token)
+
+					connections[v.token] = v
+				} else {
+					KickPlayer(v)
+				}
+			default:
+				log.Println("no prepare response from:", token)
 				KickPlayer(v)
 			}
 		}
@@ -528,6 +556,7 @@ func GameLoop() {
 			continue
 		}
 
+		log.Println("will play game rounds.players:", len(connections))
 		game.status = 1
 		PlayGameRounds(game)
 	}
@@ -654,7 +683,7 @@ func saveHandler(w http.ResponseWriter, r *http.Request) {
 	default:
 		err = "params err"
 	}
-	if token != "iaijmnxuahiqooqjs" {
+	if token != "iaijmnxuahiqooqjs8918221h" {
 		err = "token fail."
 	}
 	if err != "" {

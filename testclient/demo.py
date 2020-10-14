@@ -21,7 +21,8 @@ async def send(obj):
     await gws.send(s)
 
 async def hello():
-    uri = "ws://localhost:8888/ws"
+    uri = "ws://pgame.51wnl-cq.com:8881/ws"
+    # uri = "ws://localhost:8881/ws"
     while True:
         async with websockets.connect(uri) as websocket:
             global gws
@@ -30,7 +31,7 @@ async def hello():
             res = await websocket.recv()
             res = json.loads(res)
             if res['Msgtype']==0:
-                print("login ok.")
+                print("login ok:",token)
             else:
                 await asyncio.sleep(1)
                 continue
