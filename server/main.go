@@ -298,14 +298,14 @@ func MovePlayer(g *Game, player *Player, x int, y int) {
 	}
 
 	if step == 0 {
-		log.Println("Player not moving!", player.token, x, ",", y)
+		// log.Println("Player not moving!", player.token, x, ",", y)
 		player.Info.Gold--
 		return
 	} else if step < info.Gold {
 		player.Info.Gold = player.Info.Gold - step
 	} else {
 		player.Info.Gold--
-		log.Println("Gold not enough!", player.token)
+		// log.Println("Gold not enough!", player.token)
 		return
 	}
 

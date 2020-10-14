@@ -1,5 +1,6 @@
 */CompileDaemon
 */progame
+*.log
 records
 
 main.exe

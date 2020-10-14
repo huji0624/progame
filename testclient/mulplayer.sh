@@ -1,10 +1,10 @@
-python demo.py a &
-python demo.py b &
-python demo.py c &
-python demo.py d &
-python demo.py e &
-python demo.py f &
-python demo.py x &
-python demo.py y &
-python demo.py z &
-python demo.py v &
+python demo.py a > a.log 2>&1 &
+python demo.py b > b.log 2>&1 &
+python demo.py c > c.log 2>&1 &
+python demo.py d > d.log 2>&1 &
+python demo.py e > e.log 2>&1 &
+python demo.py f > f.log 2>&1 &
+python demo.py x > x.log 2>&1 &
+python demo.py y > y.log 2>&1 &
+python demo.py z > z.log 2>&1 &
+python demo.py v > v.log 2>&1 &
