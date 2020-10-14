@@ -436,6 +436,8 @@ func PlayGameRounds(game *Game) {
 			break
 		}
 
+		log.Println("Will Start Game(", game.GameID, ") Round(", game.RoundID, ")..")
+
 		//random Gold
 		RandomGenGold(game)
 
@@ -576,7 +578,7 @@ func SaveGameResult(g *Game) {
 	}
 	records.Scores[records.Index] = tmpScore
 	records.Index++
-	if records.Index == 50 {
+	if records.Index == 64 {
 		records.Index = 0
 	}
 
@@ -591,7 +593,8 @@ func SaveGameResult(g *Game) {
 	}
 	for k, v := range totalScore {
 		av := v / totalCount[k]
-		ps = append(ps, &GameScore{Name: k, Gold: av})
+		name := fmt.Sprintf("%v(%v)", k, totalCount[k])
+		ps = append(ps, &GameScore{Name: name, Gold: av})
 	}
 	sort.Slice(ps, func(i, j int) bool { return ps[i].Gold > ps[j].Gold })
 

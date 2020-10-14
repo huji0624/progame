@@ -50,6 +50,7 @@ async def hello():
                         import random
                         x = random.randint(0,res['Wid']-1)
                         y = random.randint(0,res['Hei']-1)
+                        #发送移动位置时，必须带上发送给你的RoundID
                         await send({"msgtype":4,"token":token,"x":x,"y":y,"RoundID":res['RoundID']})
         except IOError as e:
             print(e)
