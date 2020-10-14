@@ -173,14 +173,14 @@ let compare = function (prop) {
     z-index: 10;
   }
   .logo {
-    font-family: 微软雅黑;
+    font-family: 'FZJZJT';
     position: fixed;
     left: 35px;
     top: 15px;
     margin-top: 0;
     font-size: 30px;
     z-index: 10;
-    color: #fefefe;
+    color: #fff;
     text-shadow: 0 0 4px #fff, 0 -5px 4px #ff3, 2px -10px 6px #fd3,
       -2px -15px 10px #f80, 2px -25px 20px #f20;
 
