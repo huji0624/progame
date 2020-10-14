@@ -772,7 +772,7 @@ func main() {
 	http.HandleFunc("/save", saveHandler)
 	http.HandleFunc("/game", gameHandler)
 	http.HandleFunc("/rank", rankHandler)
-	http.Handle("/", http.FileServer(http.Dir("../web/dist")))
+	http.Handle("/", http.FileServer(http.Dir("../web")))
 	http.HandleFunc("/ws", echo)
 	log.Println("ws server ready...")
 	log.Fatal(http.ListenAndServe("0.0.0.0:8881", nil))

@@ -1,5 +1,12 @@
 <template>
   <section class="main">
+    <a
+      href="https://github.com/huji0624/progame/tree/dev/"
+      target="_blank"
+      class="logo"
+      title="查看抢钱大作战的玩法和帮助"
+      >抢钱大作战</a
+    >
     <div class="head"></div>
     <div class="list">
       <el-row class="rows">
@@ -36,7 +43,7 @@
                     <div v-if="i > 2">{{ i + 1 }}</div>
                   </el-col>
                   <el-col :span="8">
-                    {{ it.Name }}
+                    {{ it.Name.slice(0, 6) }}
                   </el-col>
                   <el-col :span="8">
                     {{ it.Gold }}
@@ -165,6 +172,22 @@ let compare = function (prop) {
     font-size: 20px;
     z-index: 10;
   }
+  .logo {
+    font-family: 微软雅黑;
+    position: fixed;
+    left: 35px;
+    top: 15px;
+    margin-top: 0;
+    font-size: 30px;
+    z-index: 10;
+    color: #fefefe;
+    text-shadow: 0 0 4px #fff, 0 -5px 4px #ff3, 2px -10px 6px #fd3,
+      -2px -15px 10px #f80, 2px -25px 20px #f20;
+
+    // text-shadow: 0 -1px 0 #123; 凹进效果
+    // text-shadow: 0 -1px 1px #eee; 凸出效果
+    // text-shadow: 0 1px 1px #123; 凸出效果
+  }
   .list {
     padding: 40px 20px 20px;
     margin: 40px 175px 5px;
@@ -237,6 +260,8 @@ let compare = function (prop) {
     }
   }
   .replay {
+    height: 200px;
+    overflow-y: auto;
     margin: 30px 175px 0;
     padding: 15px;
     background: #2f0365;
