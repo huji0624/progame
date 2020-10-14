@@ -423,6 +423,7 @@ func ReadLoop(p *Player, token string) {
 		} else {
 			log.Println("ReadLoop read token:", token, " err:", err, " player will not move.")
 			close(p.rc)
+			p.rc = nil
 			break
 		}
 	}
@@ -516,7 +517,9 @@ func GameLoop() {
 		for _, v := range prepares {
 			trc := v.rc
 			v.rc = nil
-			close(trc)
+			if trc != nil {
+				close(trc)
+			}
 			v.rc = make(chan *Msg, 200)
 		}
 
