@@ -3,7 +3,7 @@ export default function ({ store, $axios, app, redirect }, inject) {
   const axios = $axios;
   if (!stores) stores = store;
   const url =
-    process.env.NODE_ENV === 'prod'
+    process.env.NODE_ENV === 'production'
       ? 'https://pgame.51wnl-cq.com/'
       : 'localhost:8881/';
   axios.defaults.baseURL = url;

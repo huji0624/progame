@@ -72,7 +72,7 @@ export default {
    */
   components: true,
   router: {
-    base: process.env.NODE_ENV === 'production' ? '/web' : '/',
+    base: process.env.NODE_ENV === 'production' ? '/20201024' : '/',
     fallback: true,
   },
   /*
