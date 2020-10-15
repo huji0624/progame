@@ -14,7 +14,9 @@
             {
                
                // 打开一个 web socket
-               var ws = new WebSocket("ws://localhost:8888/ws");
+               wsuri = "ws://pgame.51wnl-cq.com:8881/ws"
+               // wsuri = "ws://localhost:8881/ws"
+               var ws = new WebSocket(wsuri);
 
                var value = document.getElementById("token").value
                 
@@ -38,6 +40,7 @@
                   }else if(jmsg.Msgtype==3){
                     let x = Math.floor(Math.random()*jmsg.Wid)
                     let y = Math.floor(Math.random()*jmsg.Hei)
+                    //发送移动位置时，必须带上发送给你的RoundID
                     ws.send(JSON.stringify({msgtype:4,token:value,x:x,y:y,RoundID:jmsg.RoundID}));
                   }
                };

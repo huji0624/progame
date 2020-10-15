@@ -1,5 +1,12 @@
 <template>
   <section class="main">
+    <a
+      href="https://github.com/huji0624/progame/tree/dev/"
+      target="_blank"
+      class="logo"
+      title="查看抢钱大作战的玩法和帮助"
+      >抢钱大作战</a
+    >
     <div class="head"></div>
     <div class="list">
       <el-row class="rows">
@@ -8,8 +15,8 @@
           <el-row class="listbody">
             <div class="title">
               <el-row>
-                <el-col :span="8"> 名次 </el-col>
-                <el-col :span="8"> 队名 </el-col>
+                <el-col :span="6"> 名次 </el-col>
+                <el-col :span="10"> 队名 </el-col>
                 <el-col :span="8"> 得分 </el-col>
               </el-row>
             </div>
@@ -17,7 +24,7 @@
               <div v-if="!All[item.name]" class="notstart">敬请期待</div>
               <div v-else>
                 <el-row class="item" v-for="(it, i) in All[item.name]" :key="i">
-                  <el-col :span="8">
+                  <el-col :span="6">
                     <img
                       class="img"
                       v-if="i == 0"
@@ -35,8 +42,8 @@
                     />
                     <div v-if="i > 2">{{ i + 1 }}</div>
                   </el-col>
-                  <el-col :span="8">
-                    {{ it.Name }}
+                  <el-col :span="10">
+                    {{ it.Name.slice(0, 6) }}
                   </el-col>
                   <el-col :span="8">
                     {{ it.Gold }}
@@ -73,7 +80,7 @@ let _this;
 export default {
   head() {
     return {
-      title: '金币作战排行榜',
+      title: '排行榜 - 2020程序员节日游戏',
     };
   },
   data() {
@@ -82,10 +89,10 @@ export default {
       All: {},
       Gid: 0,
       tabs: [
+        { label: '当前得分', name: 'Total' },
         { label: '第一次排名', name: 'First' },
         { label: '第二次排名', name: 'Second' },
         { label: '第三次排名', name: 'Third' },
-        { label: '最终排名', name: 'Total' },
       ],
     };
   },
@@ -165,6 +172,22 @@ let compare = function (prop) {
     font-size: 20px;
     z-index: 10;
   }
+  .logo {
+    font-family: 'FZJZJT';
+    position: fixed;
+    left: 35px;
+    top: 15px;
+    margin-top: 0;
+    font-size: 30px;
+    z-index: 10;
+    color: #fff;
+    text-shadow: 0 0 4px #fff, 0 -5px 4px #ff3, 2px -10px 6px #fd3,
+      -2px -15px 10px #f80, 2px -25px 20px #f20;
+
+    // text-shadow: 0 -1px 0 #123; 凹进效果
+    // text-shadow: 0 -1px 1px #eee; 凸出效果
+    // text-shadow: 0 1px 1px #123; 凸出效果
+  }
   .list {
     padding: 40px 20px 20px;
     margin: 40px 175px 5px;
@@ -237,6 +260,8 @@ let compare = function (prop) {
     }
   }
   .replay {
+    height: 200px;
+    overflow-y: auto;
     margin: 30px 175px 0;
     padding: 15px;
     background: #2f0365;

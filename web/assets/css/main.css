@@ -1,3 +1,10 @@
+@font-face {
+  font-family: 'FZJZJT';
+  src: url('../fonts/FZJZJT.ttf');
+  font-weight: normal;
+  font-style: normal;
+}
+
 .page-enter-active,
 .page-leave-active {
   transition: opacity 0.2s;

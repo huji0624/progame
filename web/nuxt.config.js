@@ -16,7 +16,7 @@ export default {
    ** See https://nuxtjs.org/api/configuration-head
    */
   head: {
-    title: '程序员节游戏',
+    title: '抢钱大作战 - 2020程序员节日游戏',
     meta: [
       { charset: 'utf-8' },
       {

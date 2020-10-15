@@ -24,9 +24,10 @@
           <div class="gold">{{ it.gold }}</div>
           <div v-if="it.players">
             <div v-for="(it, i) in it.players" :key="i">
-              <div class="item" :class="{ focus: it.isFocus }" v-if="i < 3">
-                {{ it.Name }} - {{ it.Gold }}
-              </div>
+              <marquee class="item" :class="{ focus: it.isFocus }" v-if="i < 3" behavior="alternate" scrollamount="2">
+                {{ it.Name }} - {{ it.Gold }} 
+                <!-- {{ it.Name.slice(0, 4) }} - {{ it.Gold }} -->
+              </marquee>
             </div>
           </div>
         </div>
@@ -34,7 +35,9 @@
       <div class="popover">
         <div class="conta">
           <div class="tips">玩家信息</div>
-          <div v-if="crtPos" class="crtPos">当前坐标：{{ crtPos }}</div>
+          <div v-if="crtPos" class="crtPos">
+            当前坐标：{{ crtPos }} 金币数量：{{ crtGold }}
+          </div>
           <div v-for="(it, i) in playersInfo" :key="i">
             {{ i + 1 }}、团队：<span class="name">{{ it.Name }}</span>
             金币：
@@ -60,7 +63,7 @@
             @change="onChangePlayer"
           >
             <el-checkbox v-for="it in allPlayers" :label="it" :key="it">
-              {{ it }}
+              {{ it.slice(0, 8) }}
             </el-checkbox>
           </el-checkbox-group>
         </div>
@@ -75,7 +78,7 @@ const allPlayers = [];
 export default {
   head() {
     return {
-      title: '程序员节日活动',
+      title: '游戏回放 - 2020程序员节日游戏',
     };
   },
   data() {
@@ -85,6 +88,7 @@ export default {
       playerlistShow: true,
       playersInfo: [],
       crtPos: '',
+      crtGold: '',
       players: [],
       total: [],
 
@@ -160,6 +164,7 @@ export default {
     mouseOver(it) {
       this.playersInfo = it.players || [];
       this.crtPos = it.pos;
+      this.crtGold = it.gold;
     },
     mouseLeave() {
       // this.playersInfo = [];
@@ -289,7 +294,7 @@ function compare(a, b) {
         z-index: 99;
         color: #1eeaf0;
         background: #635393;
-        border-color: #635393;
+        border: 1px @bodercoler solid;
       }
       .focus {
         color: #0e025e;
@@ -307,7 +312,7 @@ function compare(a, b) {
         font-size: 60px;
         font-style: italic;
         z-index: 1;
-        opacity: 0.1;
+        opacity: 0.3;
       }
     }
     .items:hover {
@@ -405,5 +410,8 @@ function compare(a, b) {
 .el-page-header__content {
   font-size: 18px;
   color: #04def0;
+}
+.el-checkbox__label {
+  width: 90px;
 }
 </style>
