@@ -5,7 +5,7 @@ export default function ({ store, $axios, app, redirect }, inject) {
   const url =
     process.env.NODE_ENV === 'production'
       ? 'https://pgame.51wnl-cq.com/'
-      : 'localhost:8881/';
+      : 'http://localhost:8881/';
   axios.defaults.baseURL = url;
   axios.defaults.timeout = 10000;
 

@@ -24,9 +24,10 @@
           <div class="gold">{{ it.gold }}</div>
           <div v-if="it.players">
             <div v-for="(it, i) in it.players" :key="i">
-              <div class="item" :class="{ focus: it.isFocus }" v-if="i < 3">
-                {{ it.Name.slice(0, 4) }} - {{ it.Gold }}
-              </div>
+              <marquee class="item" :class="{ focus: it.isFocus }" v-if="i < 3" behavior="alternate" scrollamount="2">
+                {{ it.Name }} - {{ it.Gold }} 
+                <!-- {{ it.Name.slice(0, 4) }} - {{ it.Gold }} -->
+              </marquee>
             </div>
           </div>
         </div>
@@ -293,7 +294,7 @@ function compare(a, b) {
         z-index: 99;
         color: #1eeaf0;
         background: #635393;
-        border-color: #635393;
+        border: 1px @bodercoler solid;
       }
       .focus {
         color: #0e025e;
@@ -409,5 +410,8 @@ function compare(a, b) {
 .el-page-header__content {
   font-size: 18px;
   color: #04def0;
+}
+.el-checkbox__label {
+  width: 90px;
 }
 </style>

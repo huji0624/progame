@@ -15,8 +15,8 @@
           <el-row class="listbody">
             <div class="title">
               <el-row>
-                <el-col :span="8"> 名次 </el-col>
-                <el-col :span="8"> 队名 </el-col>
+                <el-col :span="6"> 名次 </el-col>
+                <el-col :span="10"> 队名 </el-col>
                 <el-col :span="8"> 得分 </el-col>
               </el-row>
             </div>
@@ -24,7 +24,7 @@
               <div v-if="!All[item.name]" class="notstart">敬请期待</div>
               <div v-else>
                 <el-row class="item" v-for="(it, i) in All[item.name]" :key="i">
-                  <el-col :span="8">
+                  <el-col :span="6">
                     <img
                       class="img"
                       v-if="i == 0"
@@ -42,7 +42,7 @@
                     />
                     <div v-if="i > 2">{{ i + 1 }}</div>
                   </el-col>
-                  <el-col :span="8">
+                  <el-col :span="10">
                     {{ it.Name.slice(0, 6) }}
                   </el-col>
                   <el-col :span="8">
