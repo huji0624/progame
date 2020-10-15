@@ -40,6 +40,8 @@
                   }else if(jmsg.Msgtype==3){
                     let x = Math.floor(Math.random()*jmsg.Wid)
                     let y = Math.floor(Math.random()*jmsg.Hei)
+                    
+                    //这就是你最终需要上传的具有x、y轴坐标的位置信息
                     //发送移动位置时，必须带上发送给你的RoundID
                     ws.send(JSON.stringify({msgtype:4,token:value,x:x,y:y,RoundID:jmsg.RoundID}));
                   }
