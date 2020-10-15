@@ -1,7 +1,8 @@
 {
-  "name": "template",
+  "name": "1024games",
   "version": "1.0.0",
   "private": true,
+  "author": "Jurieo",
   "scripts": {
     "dev": "nuxt",
     "build": "nuxt build",
