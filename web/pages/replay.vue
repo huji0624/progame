@@ -24,17 +24,24 @@
           <div class="gold">{{ it.gold }}</div>
           <div v-if="it.players">
             <div v-for="(it, i) in it.players" :key="i">
-              <marquee class="item" :class="{ focus: it.isFocus }" v-if="i < 3" behavior="alternate" scrollamount="2">
-                {{ it.Name }} - {{ it.Gold }} 
-                <!-- {{ it.Name.slice(0, 4) }} - {{ it.Gold }} -->
-              </marquee>
+              <!-- <marquee  behavior="alternate" scrollamount="2"> -->
+              <div class="item" :class="{ focus: it.isFocus }" v-if="i < 3">
+                <div v-if="it.Name.length > 4">
+                  <marquee scrollamount="2">
+                    {{ it.Name }} - {{ it.Gold }}
+                  </marquee>
+                </div>
+                <div v-else>{{ it.Name }} - {{ it.Gold }}</div>
+              </div>
+              <!-- {{ it.Name.slice(0, 4) }} - {{ it.Gold }} -->
+              <!-- </marquee> -->
             </div>
           </div>
         </div>
       </div>
       <div class="popover">
         <div class="conta">
-          <div class="tips">玩家信息</div>
+          <div class="tips">棋盘格信息</div>
           <div v-if="crtPos" class="crtPos">
             当前坐标：{{ crtPos }} 金币数量：{{ crtGold }}
           </div>
@@ -47,15 +54,15 @@
       </div>
       <div class="playerlist">
         <div class="list">
-          <div class="tips">选择你关注的游戏队伍</div>
+          <div class="tips">选择关注的游戏队伍 <span>最多3个</span></div>
 
-          <el-checkbox
+          <!-- <el-checkbox
             :indeterminate="isIndeterminate"
             v-model="checkAll"
             @change="onCheckAll"
             >全选</el-checkbox
-          >
-          <!-- <div style="margin: 15px 0"></div> -->
+          > -->
+          <div style="margin: 15px 0"></div>
           <el-checkbox-group
             v-model="focusPlayers"
             :max="3"
@@ -123,12 +130,9 @@ export default {
   methods: {
     start() {
       let { x, y, players, roundNo, allRound, focusPlayers } = this;
-      if (roundNo > allRound.length - 1) {
-        return false;
-      }
+      if (roundNo > allRound.length - 1) return false;
 
-      const round = allRound[roundNo],
-        tilemap = round.Tilemap,
+      const tilemap = allRound[roundNo].Tilemap,
         afterArr = [];
 
       for (let i = 0; i < y; i++) {
@@ -145,6 +149,7 @@ export default {
           //添加关注玩家
           newA = maps.map((it) => {
             _this.focusPlayers.includes(it.Name) && (it.isFocus = true);
+            !_this.focusPlayers.includes(it.Name) && (it.isFocus = false);
             return it;
           });
           //关注玩家排名靠前
@@ -182,7 +187,7 @@ export default {
       }
     },
     onPre() {
-      if (this.roundNo > 0) this.roundNo--;
+      this.roundNo > 0 && this.roundNo--;
     },
     onAutoPlay() {
       if (!_this.loopId) {
@@ -211,6 +216,7 @@ export default {
       this.checkAll = checkedCount === this.allPlayers.length;
       this.isIndeterminate =
         checkedCount > 0 && checkedCount < this.allPlayers.length;
+      this.start();
     },
   },
   created() {
@@ -298,8 +304,9 @@ function compare(a, b) {
       }
       .focus {
         color: #0e025e;
-        background-color: #04def0;
-        border-color: #04def0;
+        font-weight: bold;
+        background-color: #edcc53;
+        border-color: #929a19;
       }
       .gold {
         width: 100px;
@@ -339,7 +346,7 @@ function compare(a, b) {
       color: #1ceaee;
       background: #1d0957;
       .crtPos {
-        color: crimson;
+        color: #fcf8a7;
       }
       .name {
         font-weight: bold;
@@ -388,6 +395,10 @@ function compare(a, b) {
   .tips {
     font-size: 20px;
     font-weight: bold;
+    span {
+      font-size: 13px;
+      font-weight: 300;
+    }
   }
 }
 </style>
@@ -402,6 +413,7 @@ function compare(a, b) {
 }
 .el-checkbox {
   color: #04def0;
+  line-height: 30px;
 }
 .el-checkbox__input.is-indeterminate .el-checkbox__inner {
   background-color: #04def0;

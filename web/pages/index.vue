@@ -1,7 +1,7 @@
 <template>
   <section class="main">
     <a
-      href="https://github.com/huji0624/progame/tree/dev/"
+      href="https://github.com/huji0624/progame"
       target="_blank"
       class="logo"
       title="查看抢钱大作战的玩法和帮助"
