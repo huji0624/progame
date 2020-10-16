@@ -45,7 +45,7 @@
           <div v-if="crtPos" class="crtPos">
             当前坐标：{{ crtPos }} 金币数量：{{ crtGold }}
           </div>
-          <div v-for="(it, i) in playersInfo" :key="i">
+          <div class="list" v-for="(it, i) in playersInfo" :key="i">
             {{ i + 1 }}、团队：<span class="name">{{ it.Name }}</span>
             金币：
             <span class="gold">{{ it.Gold }}</span>
@@ -53,7 +53,7 @@
         </div>
       </div>
       <div class="playerlist">
-        <div class="list">
+        <div class="">
           <div class="tips">选择关注的游戏队伍 <span>最多3个</span></div>
 
           <!-- <el-checkbox
@@ -63,16 +63,18 @@
             >全选</el-checkbox
           > -->
           <div style="margin: 15px 0"></div>
-          <el-checkbox-group
-            v-model="focusPlayers"
-            :max="3"
-            text-color="#eee"
-            @change="onChangePlayer"
-          >
-            <el-checkbox v-for="it in allPlayers" :label="it" :key="it">
-              {{ it.slice(0, 8) }}
-            </el-checkbox>
-          </el-checkbox-group>
+          <div class="list">
+            <el-checkbox-group
+              v-model="focusPlayers"
+              :max="3"
+              text-color="#eee"
+              @change="onChangePlayer"
+            >
+              <el-checkbox v-for="it in allPlayers" :label="it" :key="it">
+                {{ it.slice(0, 8) }}
+              </el-checkbox>
+            </el-checkbox-group>
+          </div>
         </div>
       </div>
     </div>
@@ -259,6 +261,7 @@ function compare(a, b) {
       font-family: '微软雅黑';
       padding: 15px 32px;
       margin: 0 10px;
+      user-select: none;
       background-image: url('../assets/images/btn.png');
       background-size: 100% 100%;
       cursor: pointer;
@@ -331,7 +334,6 @@ function compare(a, b) {
     top: 170px;
     left: 20px;
     width: 300px;
-
     .conta {
       padding: 12px;
       z-index: 2000;
@@ -345,6 +347,10 @@ function compare(a, b) {
       border: 3px @bodercoler solid;
       color: #1ceaee;
       background: #1d0957;
+      .list {
+        max-height: 600px;
+        overflow-y: auto;
+      }
       .crtPos {
         color: #fcf8a7;
       }
@@ -364,23 +370,25 @@ function compare(a, b) {
     top: 170px;
     right: 20px;
     width: 300px;
+    font-size: 14px;
+    padding: 12px;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+    word-break: break-all;
+    border-radius: 10px;
+    border: 3px @bodercoler solid;
+
+    color: #1ceaee;
+    background: #1d0957;
     .list {
-      position: absolute;
       min-width: 150px;
       padding: 12px;
       z-index: 2000;
       width: 300px;
-      min-height: 150px;
+      // min-height: 150px;
+      max-height: 600px;
       line-height: 1.4;
       text-align: justify;
-      font-size: 14px;
-      box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-      word-break: break-all;
-      border-radius: 10px;
-      border: 3px @bodercoler solid;
-
-      color: #1ceaee;
-      background: #1d0957;
+      overflow-y: auto;
     }
   }
   .nodata {
