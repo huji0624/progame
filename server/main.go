@@ -299,12 +299,14 @@ func MovePlayer(g *Game, player *Player, x int, y int) {
 		step = 0
 	}
 
+	cost := int(float64(step) * 1.5)
+
 	if step == 0 {
 		// log.Println("Player not moving!", player.token, x, ",", y)
 		player.Info.Gold--
 		return
-	} else if step <= info.Gold {
-		player.Info.Gold = player.Info.Gold - step
+	} else if cost <= info.Gold {
+		player.Info.Gold = player.Info.Gold - cost
 	} else {
 		player.Info.Gold--
 		// log.Println("Gold not enough!", player.token)
@@ -319,7 +321,7 @@ func MovePlayer(g *Game, player *Player, x int, y int) {
 }
 
 func CheckGameOver(g *Game) bool {
-	if g.RoundID == 120 {
+	if g.RoundID == 96 {
 		return true
 	}
 
@@ -332,6 +334,17 @@ type Tile struct {
 	players map[string]*Player
 }
 
+func GetRandomPlayer(players map[string]*Player) *Player {
+	tmp := make([]*Player, 0, 3)
+	for _, v := range players {
+		tmp = append(tmp, v)
+	}
+
+	index := rand.Intn(len(tmp))
+	p := tmp[index]
+	return p
+}
+
 func ApplyGameLogic(g *Game, playings map[string]*Player) {
 
 	for i := 0; i < MapWidth; i++ {
@@ -339,14 +352,8 @@ func ApplyGameLogic(g *Game, playings map[string]*Player) {
 			t := g.Tilemap[j][i]
 
 			//randomly give gold to one player
-			if t.Gold > 0 && len(t.players) > 0 {
-				tmp := make([]*Player, 0, 3)
-				for _, v := range t.players {
-					tmp = append(tmp, v)
-				}
-
-				index := rand.Intn(len(tmp))
-				p := tmp[index]
+			if t.Gold != 0 && len(t.players) > 0 {
+				p := GetRandomPlayer(t.players)
 				p.Info.Gold += t.Gold
 				t.Gold = 0
 			}
@@ -356,10 +363,6 @@ func ApplyGameLogic(g *Game, playings map[string]*Player) {
 				GiveGoldProcess(t)
 			}
 		}
-	}
-
-	for _, v := range playings {
-		v.Info.Gold = v.Info.Gold + v.Info.Gold/10*1
 	}
 }
 
@@ -398,7 +401,9 @@ func RandomGenGold(g *Game, playings map[string]*Player) {
 
 	n := MapHeight * MapWidth / 6
 	for i := 0; i < n; i++ {
-		r := rand.Intn(4)
+		r1 := rand.Intn(10)
+		r2 := rand.Intn(5)
+		r := r1 - r2
 
 		x := rand.Intn(MapWidth)
 		y := rand.Intn(MapHeight)
@@ -485,6 +490,11 @@ func PlayOneRound(game *Game, playings map[string]*Player, playermove func(game 
 		v.Info.Gold++
 	}
 
+	//give out interest
+	for _, v := range playings {
+		v.Info.Gold = v.Info.Gold + v.Info.Gold/10*1
+	}
+
 	if randomGold {
 		//random Gold
 		RandomGenGold(game, playings)
@@ -503,14 +513,14 @@ func PlayGameRounds(game *Game, playings map[string]*Player) {
 			break
 		}
 
-		PlayOneRound(game, playings, RunPlayerMoves, true)
-
 		if CheckGameOver(game) {
 			game.status = -1
 			log.Println("Game Over.")
 			SaveGameResult(game)
 			pubGameResults()
 			break
+		} else {
+			PlayOneRound(game, playings, RunPlayerMoves, true)
 		}
 	}
 }
@@ -527,7 +537,10 @@ func GameLoop() {
 	log.Println("Game ID:", game.GameID)
 
 	for {
-		log.Println("will prepare for next game.")
+		log.Println("will prepare for next game.Game id:", game.GameID)
+		// if game.GameID == 1 {
+		// 	time.Sleep(time.Hour * 12)
+		// }
 		for {
 			if len(prepares) <= 1 {
 				time.Sleep(time.Second)
@@ -880,20 +893,21 @@ func RunUnitTest() bool {
 		return false
 	}
 
-	a.Info.Gold = 10
+	a.Info.Gold = 9
 	PlayOneRound(testGame, testplayers, func(game *Game, playings map[string]*Player) {
 
 		MovePlayer(testGame, a, 3, 3)
 
 	}, false)
 
-	if a.Info.X == 3 && a.Info.Y == 3 && a.Info.Gold == 5 {
+	if a.Info.X == 3 && a.Info.Y == 3 && a.Info.Gold == 2 {
 
 	} else {
-		log.Println("move a to same position test fail.")
+		log.Println("move a to 3,3 position test fail.")
+		LogStruct(testplayers)
 		return false
 	}
-	//a 5 (3,3)
+	//a 2 (3,3)
 
 	//test player get gold
 	generateAt(testGame, 3, 4, 3)
@@ -902,16 +916,30 @@ func RunUnitTest() bool {
 		MovePlayer(testGame, a, 3, 4)
 
 	}, false)
-	if a.Info.X == 3 && a.Info.Y == 4 && a.Info.Gold == 8 {
+	if a.Info.X == 3 && a.Info.Y == 4 && a.Info.Gold == 5 {
 
 	} else {
 		log.Println("get gold test fail.")
+		LogStruct(testplayers)
 		return false
 	}
-	//a 8 (3,4)
+
+	generateAt(testGame, 3, 4, -1)
+	PlayOneRound(testGame, testplayers, func(game *Game, playings map[string]*Player) {
+
+		MovePlayer(testGame, a, 3, 4)
+
+	}, false)
+	if a.Info.X == 3 && a.Info.Y == 4 && a.Info.Gold == 4 {
+
+	} else {
+		log.Println("get -1 gold test fail.")
+		LogStruct(testplayers)
+		return false
+	}
 
 	a.Info.Gold = 2
-
+	d.Info.Gold = 2
 	generateAt(testGame, 3, 5, 1)
 	PlayOneRound(testGame, testplayers, func(game *Game, playings map[string]*Player) {
 
@@ -980,7 +1008,7 @@ func RunUnitTest() bool {
 	if c.Info.X == 7 && c.Info.Y == 4 && c.Info.Gold == 22 {
 
 	} else {
-		log.Println("move a to same position test fail.")
+		log.Println("player get interest test fail.")
 		return false
 	}
 
