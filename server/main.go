@@ -347,14 +347,45 @@ func GetRandomPlayer(players map[string]*Player) *Player {
 
 func ApplyGameLogic(g *Game, playings map[string]*Player) {
 
+	xby := false
+	xly := false
+
 	for i := 0; i < MapWidth; i++ {
 		for j := 0; j < MapHeight; j++ {
 			t := g.Tilemap[j][i]
 
 			//randomly give gold to one player
 			if t.Gold != 0 && len(t.players) > 0 {
-				p := GetRandomPlayer(t.players)
-				p.Info.Gold += t.Gold
+				if t.Gold == -4 {
+					//40% interest
+					p := GetRandomPlayer(t.players)
+					p.Info.Gold = p.Info.Gold + p.Info.Gold/10*4
+				} else if t.Gold == -11 {
+					//all x>y gold lose half
+					xby = true
+				} else if t.Gold == -9 {
+					//all x<y gold lose half
+					xly = true
+				} else if t.Gold%5 == 0 {
+					pcount := len(t.players)
+					if pcount == 1 {
+						p := GetRandomPlayer(t.players)
+						p.Info.Gold += t.Gold
+					} else {
+						total := t.Gold
+						for _, v := range t.players {
+							total += v.Info.Gold
+						}
+						each := total / len(t.players)
+						for _, v := range t.players {
+							v.Info.Gold = each
+						}
+					}
+				} else {
+					p := GetRandomPlayer(t.players)
+					p.Info.Gold += t.Gold
+				}
+
 				t.Gold = 0
 			}
 
@@ -363,6 +394,26 @@ func ApplyGameLogic(g *Game, playings map[string]*Player) {
 				GiveGoldProcess(t)
 			}
 		}
+	}
+
+	if xby || xly {
+		for i := 0; i < MapWidth; i++ {
+			for j := 0; j < MapHeight; j++ {
+				t := g.Tilemap[j][i]
+				if xby && i > j {
+					HalfPlayersGold(t.players)
+				}
+				if xly && i < j {
+					HalfPlayersGold(t.players)
+				}
+			}
+		}
+	}
+}
+
+func HalfPlayersGold(behalfs map[string]*Player) {
+	for _, v := range behalfs {
+		v.Info.Gold = v.Info.Gold / 2
 	}
 }
 
@@ -401,8 +452,8 @@ func RandomGenGold(g *Game, playings map[string]*Player) {
 
 	n := MapHeight * MapWidth / 6
 	for i := 0; i < n; i++ {
-		r1 := rand.Intn(10)
-		r2 := rand.Intn(5)
+		r1 := rand.Intn(8)
+		r2 := rand.Intn(6)
 		r := r1 - r2
 
 		x := rand.Intn(MapWidth)
@@ -492,7 +543,7 @@ func PlayOneRound(game *Game, playings map[string]*Player, playermove func(game 
 
 	//give out interest
 	for _, v := range playings {
-		v.Info.Gold = v.Info.Gold + v.Info.Gold/10*1
+		v.Info.Gold = v.Info.Gold + v.Info.Gold/10*2
 	}
 
 	if randomGold {
@@ -615,7 +666,7 @@ func SaveGameResult(g *Game) {
 	}
 	records.Scores[records.Index] = tmpScore
 	records.Index++
-	if records.Index == 64 {
+	if records.Index == 96 {
 		records.Index = 0
 	}
 
@@ -900,7 +951,7 @@ func RunUnitTest() bool {
 
 	}, false)
 
-	if a.Info.X == 3 && a.Info.Y == 3 && a.Info.Gold == 2 {
+	if a.Info.X == 3 && a.Info.Y == 3 && a.Info.Gold == 3 {
 
 	} else {
 		log.Println("move a to 3,3 position test fail.")
@@ -909,6 +960,7 @@ func RunUnitTest() bool {
 	}
 	//a 2 (3,3)
 
+	a.Info.Gold = 2
 	//test player get gold
 	generateAt(testGame, 3, 4, 3)
 	PlayOneRound(testGame, testplayers, func(game *Game, playings map[string]*Player) {
@@ -1005,10 +1057,55 @@ func RunUnitTest() bool {
 		MovePlayer(testGame, c, c.Info.X, c.Info.Y)
 	}, false)
 
-	if c.Info.X == 7 && c.Info.Y == 4 && c.Info.Gold == 22 {
+	if c.Info.X == 7 && c.Info.Y == 4 && c.Info.Gold == 24 {
 
 	} else {
 		log.Println("player get interest test fail.")
+		return false
+	}
+
+	//test magic gold -4
+	c.Info.Gold = 10
+	generateAt(testGame, c.Info.X, c.Info.Y, -4)
+	PlayOneRound(testGame, testplayers, func(game *Game, playings map[string]*Player) {
+		MovePlayer(testGame, c, c.Info.X, c.Info.Y)
+	}, false)
+
+	if c.Info.X == 7 && c.Info.Y == 4 && c.Info.Gold == 16 {
+
+	} else {
+		log.Println("magic gold -4 test fail.")
+		return false
+	}
+
+	//test magic gold 5
+	c.Info.Gold = 0
+	generateAt(testGame, c.Info.X, c.Info.Y, 5)
+	PlayOneRound(testGame, testplayers, func(game *Game, playings map[string]*Player) {
+		MovePlayer(testGame, c, c.Info.X, c.Info.Y)
+	}, false)
+
+	if c.Info.X == 7 && c.Info.Y == 4 && c.Info.Gold == 5 {
+
+	} else {
+		log.Println("magic gold 5 test fail.")
+		return false
+	}
+
+	//test magic gold 10
+	a.Info.Gold = 1
+	d.Info.Gold = 3
+	generateAt(testGame, 3, 5, 10)
+	PlayOneRound(testGame, testplayers, func(game *Game, playings map[string]*Player) {
+		MovePlayer(testGame, a, 3, 5)
+		MovePlayer(testGame, d, 3, 5)
+	}, false)
+
+	if a.Info.X == 3 && a.Info.Y == 5 && d.Info.X == 3 && d.Info.Y == 5 && a.Info.Gold == 7 && d.Info.Gold == 7 {
+
+	} else {
+		log.Println("a b magic gold 10 test fail.")
+		LogStruct(testplayers)
 		return false
 	}
 
