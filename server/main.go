@@ -176,7 +176,7 @@ type Game struct {
 	roundRecords []string
 }
 
-func initGame(g *Game) {
+func initGame(g *Game, playings map[string]*Player) {
 	log.Println("init game.")
 	g.RoundID = 0
 	g.GameID = g.GameID + 1
@@ -191,14 +191,14 @@ func initGame(g *Game) {
 		}
 	}
 
-	if records.Moves == nil {
+	if records != nil && records.Moves == nil {
 		records.Moves = make(map[string]uint64)
 	}
-	if records.Gives == nil {
+	if records != nil && records.Gives == nil {
 		records.Gives = make(map[string]uint64)
 	}
 
-	for token, v := range connections {
+	for token, v := range playings {
 		x := rand.Intn(MapWidth)
 		y := rand.Intn(MapHeight)
 		v.Info = &PlayerInfo{X: x, Y: y}
@@ -211,7 +211,9 @@ func initGame(g *Game) {
 
 func PublicToClientData(data []byte) {
 	for _, v := range connections {
-		WriteToClientData(v.c, data)
+		if v.rc != nil {
+			WriteToClientData(v.c, data)
+		}
 	}
 }
 
@@ -309,7 +311,9 @@ func MovePlayer(g *Game, player *Player, x int, y int) {
 		return
 	}
 
-	records.Moves[player.Info.Key] = records.Moves[player.Info.Key] + uint64(step)
+	if records != nil {
+		records.Moves[player.Info.Key] = records.Moves[player.Info.Key] + uint64(step)
+	}
 
 	MovePlayerForce(g, player, x, y)
 }
@@ -328,7 +332,7 @@ type Tile struct {
 	players map[string]*Player
 }
 
-func ApplyGameLogic(g *Game) {
+func ApplyGameLogic(g *Game, playings map[string]*Player) {
 
 	for i := 0; i < MapWidth; i++ {
 		for j := 0; j < MapHeight; j++ {
@@ -349,47 +353,48 @@ func ApplyGameLogic(g *Game) {
 
 			//who has more gold will give 1/4 of his gold to others
 			if len(t.players) > 1 {
-				mostGold := -1
-				mostGoldCount := 0
-				for _, v := range t.players {
-					// log.Println("player : ", v.Info.Key, " = ", v.Info.Gold)
-					if v.Info.Gold > mostGold {
-						mostGold = v.Info.Gold
-						mostGoldCount = 1
-					} else if v.Info.Gold == mostGold {
-						mostGoldCount++
-					}
-				}
-				poor := len(t.players) - mostGoldCount
-				if poor > 0 {
-					give := mostGold / 4
-					each := give / poor
-					if each > 0 {
-						for _, v := range t.players {
-							if v.Info.Gold == mostGold {
-								v.Info.Gold = v.Info.Gold - poor*each
-								records.Gives[v.Info.Key] = records.Gives[v.Info.Key] + uint64(poor*each)
-							} else {
-								v.Info.Gold = v.Info.Gold + mostGoldCount*each
-							}
-						}
-					}
-				}
+				GiveGoldProcess(t)
 			}
 		}
 	}
 
-	for _, v := range connections {
+	for _, v := range playings {
 		v.Info.Gold = v.Info.Gold + v.Info.Gold/10*1
 	}
 }
 
-func RandomGenGold(g *Game) {
-
-	//1 gold each round.
-	for _, v := range connections {
-		v.Info.Gold++
+func GiveGoldProcess(t *Tile) {
+	mostGold := -1
+	mostGoldCount := 0
+	for _, v := range t.players {
+		// log.Println("player : ", v.Info.Key, " = ", v.Info.Gold)
+		if v.Info.Gold > mostGold {
+			mostGold = v.Info.Gold
+			mostGoldCount = 1
+		} else if v.Info.Gold == mostGold {
+			mostGoldCount++
+		}
 	}
+	poor := len(t.players) - mostGoldCount
+	if poor > 0 {
+		give := mostGold / 4
+		each := give / poor
+		if each > 0 {
+			for _, v := range t.players {
+				if v.Info.Gold == mostGold {
+					v.Info.Gold = v.Info.Gold - poor*each
+					if records != nil {
+						records.Gives[v.Info.Key] = records.Gives[v.Info.Key] + uint64(poor*each)
+					}
+				} else {
+					v.Info.Gold = v.Info.Gold + mostGoldCount*each
+				}
+			}
+		}
+	}
+}
+
+func RandomGenGold(g *Game, playings map[string]*Player) {
 
 	n := MapHeight * MapWidth / 6
 	for i := 0; i < n; i++ {
@@ -398,9 +403,13 @@ func RandomGenGold(g *Game) {
 		x := rand.Intn(MapWidth)
 		y := rand.Intn(MapHeight)
 
-		t := g.Tilemap[y][x]
-		t.Gold += r
+		generateAt(g, x, y, r)
 	}
+}
+
+func generateAt(g *Game, x int, y int, n int) {
+	t := g.Tilemap[y][x]
+	t.Gold += n
 }
 
 func ReadLoop(p *Player, token string) {
@@ -429,57 +438,72 @@ func ReadLoop(p *Player, token string) {
 	}
 }
 
-func PlayGameRounds(game *Game) {
-	initGame(game)
+func RunPlayerMoves(game *Game, playings map[string]*Player) {
+	//play loop
+	gmsg := pubGameMap(game)
+	game.roundRecords = append(game.roundRecords, string(gmsg))
+
+	time.Sleep(time.Second)
+
+	//wait for move
+	for _, v := range playings {
+		var msg *Msg
+		for {
+			conti := false
+			select {
+			case msg = <-v.rc:
+				if msg.RoundID == game.RoundID {
+					conti = false
+				} else {
+					conti = true
+				}
+			default:
+				msg = &Msg{}
+				msg.Msgtype = -1
+				conti = false
+			}
+			if !conti {
+				break
+			}
+		}
+
+		if msg.Msgtype == 4 {
+			MovePlayer(game, v, msg.X, msg.Y)
+		} else if msg.Msgtype == -1 {
+			MovePlayer(game, v, v.Info.X, v.Info.Y)
+		} else {
+			KickPlayer(v)
+		}
+	}
+}
+
+func PlayOneRound(game *Game, playings map[string]*Player, playermove func(game *Game, playings map[string]*Player), randomGold bool) {
+	log.Println("Will Start Game(", game.GameID, ") Round(", game.RoundID, ")..")
+
+	//1 gold each round.
+	for _, v := range playings {
+		v.Info.Gold++
+	}
+
+	if randomGold {
+		//random Gold
+		RandomGenGold(game, playings)
+	}
+
+	playermove(game, playings)
+
+	game.RoundID++
+	ApplyGameLogic(game, playings)
+}
+
+func PlayGameRounds(game *Game, playings map[string]*Player) {
+	initGame(game, connections)
 	for {
 		if len(prepares) == 0 {
 			break
 		}
 
-		log.Println("Will Start Game(", game.GameID, ") Round(", game.RoundID, ")..")
-
-		//random Gold
-		RandomGenGold(game)
-
-		//play loop
-		gmsg := pubGameMap(game)
-		game.roundRecords = append(game.roundRecords, string(gmsg))
-
-		time.Sleep(time.Second)
-
-		//wait for move
-		for _, v := range connections {
-			var msg *Msg
-			for {
-				conti := false
-				select {
-				case msg = <-v.rc:
-					if msg.RoundID == game.RoundID {
-						conti = false
-					} else {
-						conti = true
-					}
-				default:
-					msg = &Msg{}
-					msg.Msgtype = -1
-					conti = false
-				}
-				if !conti {
-					break
-				}
-			}
-
-			if msg.Msgtype == 4 {
-				MovePlayer(game, v, msg.X, msg.Y)
-			} else if msg.Msgtype == -1 {
-				MovePlayer(game, v, v.Info.X, v.Info.Y)
-			} else {
-				KickPlayer(v)
-			}
-		}
-
-		game.RoundID++
-		ApplyGameLogic(game)
+		PlayOneRound(game, playings, RunPlayerMoves, true)
 
 		if CheckGameOver(game) {
 			game.status = -1
@@ -563,7 +587,7 @@ func GameLoop() {
 
 		log.Println("will play game rounds.players:", len(connections))
 		game.status = 1
-		PlayGameRounds(game)
+		PlayGameRounds(game, connections)
 	}
 }
 
@@ -593,8 +617,7 @@ func SaveGameResult(g *Game) {
 	}
 	for k, v := range totalScore {
 		av := v / totalCount[k]
-		name := fmt.Sprintf("%v(%v)", k, totalCount[k])
-		ps = append(ps, &GameScore{Name: name, Gold: av})
+		ps = append(ps, &GameScore{Name: k, Gold: av})
 	}
 	sort.Slice(ps, func(i, j int) bool { return ps[i].Gold > ps[j].Gold })
 
@@ -756,6 +779,18 @@ var g_game *Game
 var tokenmap map[string]string
 
 func main() {
+	rand.Seed(time.Now().UnixNano())
+
+	if !RunUnitTest() {
+		log.Println("Unit test fail...exit")
+		os.Exit(1)
+		return
+	}
+
+	pid := os.Getpid()
+	s := fmt.Sprintln(pid)
+	ioutil.WriteFile("./pid.log", []byte(s), 0655)
+
 	recordsPath = "records"
 
 	os.Mkdir(recordsPath, os.ModePerm)
@@ -782,4 +817,175 @@ func main() {
 	http.HandleFunc("/ws", echo)
 	log.Println("ws server ready...")
 	log.Fatal(http.ListenAndServe("0.0.0.0:8881", nil))
+}
+
+//===========Unit test==============
+
+func RunUnitTest() bool {
+	testGame := &Game{}
+	testplayers := make(map[string]*Player)
+
+	a := &Player{}
+	b := &Player{}
+	c := &Player{}
+	d := &Player{}
+
+	testplayers["a"] = a
+	testplayers["b"] = b
+	testplayers["c"] = c
+	testplayers["d"] = d
+
+	initGame(testGame, testplayers)
+
+	//test all moves
+	MovePlayerForce(testGame, a, 0, 0)
+	MovePlayerForce(testGame, b, 1, 1)
+	MovePlayerForce(testGame, c, 7, 4)
+	MovePlayerForce(testGame, d, 2, 5)
+
+	PlayOneRound(testGame, testplayers, func(game *Game, playings map[string]*Player) {
+
+		MovePlayer(testGame, a, 0, 0)
+		MovePlayer(testGame, b, 1, 2)
+		MovePlayer(testGame, c, 8, 4)
+		MovePlayer(testGame, d, 7, 5)
+
+	}, false)
+
+	if a.Info.X == 0 && a.Info.Y == 0 && a.Info.Gold == 0 {
+
+	} else {
+		log.Println("move a to same position test fail.")
+		return false
+	}
+
+	if b.Info.X == 1 && b.Info.Y == 2 && b.Info.Gold == 0 {
+
+	} else {
+		log.Println("move b to 1,2 test fail.")
+		return false
+	}
+
+	if c.Info.X == 7 && c.Info.Y == 4 && b.Info.Gold == 0 {
+
+	} else {
+		log.Println("move c to out range test fail.")
+		return false
+	}
+
+	if d.Info.X == 2 && d.Info.Y == 5 && b.Info.Gold == 0 {
+
+	} else {
+		log.Println("move d not enough gold test fail.")
+		return false
+	}
+
+	a.Info.Gold = 10
+	PlayOneRound(testGame, testplayers, func(game *Game, playings map[string]*Player) {
+
+		MovePlayer(testGame, a, 3, 3)
+
+	}, false)
+
+	if a.Info.X == 3 && a.Info.Y == 3 && a.Info.Gold == 5 {
+
+	} else {
+		log.Println("move a to same position test fail.")
+		return false
+	}
+	//a 5 (3,3)
+
+	//test player get gold
+	generateAt(testGame, 3, 4, 3)
+	PlayOneRound(testGame, testplayers, func(game *Game, playings map[string]*Player) {
+
+		MovePlayer(testGame, a, 3, 4)
+
+	}, false)
+	if a.Info.X == 3 && a.Info.Y == 4 && a.Info.Gold == 8 {
+
+	} else {
+		log.Println("get gold test fail.")
+		return false
+	}
+	//a 8 (3,4)
+
+	a.Info.Gold = 2
+
+	generateAt(testGame, 3, 5, 1)
+	PlayOneRound(testGame, testplayers, func(game *Game, playings map[string]*Player) {
+
+		MovePlayer(testGame, a, 3, 5)
+		MovePlayer(testGame, d, 3, 5)
+
+	}, false)
+
+	if a.Info.X == 3 && a.Info.Y == 5 && d.Info.X == 3 && d.Info.Y == 5 && ((a.Info.Gold == 2 && d.Info.Gold == 3) || (a.Info.Gold == 3 && d.Info.Gold == 2)) {
+
+	} else {
+		log.Println("2 players get gold test fail.")
+		LogStruct(testplayers)
+		return false
+	}
+
+	//test player give gold
+	a.Info.Gold = 8
+	d.Info.Gold = 2
+
+	PlayOneRound(testGame, testplayers, func(game *Game, playings map[string]*Player) {
+		MovePlayer(testGame, a, 3, 5)
+		MovePlayer(testGame, d, 3, 5)
+	}, false)
+
+	if a.Info.X == 3 && a.Info.Y == 5 && d.Info.X == 3 && d.Info.Y == 5 && a.Info.Gold == 6 && d.Info.Gold == 4 {
+
+	} else {
+		log.Println("player gives gold test fail.")
+		LogStruct(testplayers)
+		return false
+	}
+
+	PlayOneRound(testGame, testplayers, func(game *Game, playings map[string]*Player) {
+		MovePlayer(testGame, a, 3, 5)
+		MovePlayer(testGame, d, 3, 5)
+	}, false)
+
+	if a.Info.X == 3 && a.Info.Y == 5 && d.Info.X == 3 && d.Info.Y == 5 && a.Info.Gold == 5 && d.Info.Gold == 5 {
+
+	} else {
+		log.Println("player gives gold test fail.")
+		LogStruct(testplayers)
+		return false
+	}
+
+	PlayOneRound(testGame, testplayers, func(game *Game, playings map[string]*Player) {
+		MovePlayer(testGame, a, 3, 5)
+		MovePlayer(testGame, d, 3, 5)
+	}, false)
+
+	if a.Info.X == 3 && a.Info.Y == 5 && d.Info.X == 3 && d.Info.Y == 5 && a.Info.Gold == 5 && d.Info.Gold == 5 {
+
+	} else {
+		log.Println("player gives gold test fail.")
+		LogStruct(testplayers)
+		return false
+	}
+
+	//test gold get interest
+	c.Info.Gold = 20
+	PlayOneRound(testGame, testplayers, func(game *Game, playings map[string]*Player) {
+		MovePlayer(testGame, c, c.Info.X, c.Info.Y)
+	}, false)
+
+	if c.Info.X == 7 && c.Info.Y == 4 && c.Info.Gold == 22 {
+
+	} else {
+		log.Println("move a to same position test fail.")
+		return false
+	}
+
+	LogStruct(testGame)
+	LogStruct(testplayers)
+
+	return true
 }
