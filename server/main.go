@@ -366,7 +366,7 @@ func ApplyGameLogic(g *Game, playings map[string]*Player) {
 				} else if t.Gold == -9 {
 					//all x<y gold lose half
 					xly = true
-				} else if t.Gold%5 == 0 {
+				} else if t.Gold > 0 && t.Gold%5 == 0 {
 					pcount := len(t.players)
 					if pcount == 1 {
 						p := GetRandomPlayer(t.players)
