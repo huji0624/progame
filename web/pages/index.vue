@@ -1,12 +1,13 @@
 <template>
-  <section class="main">
-    <a
+  <section class="main" @mousemove="clickFullscreen">
+    <!-- <a
       href="https://github.com/huji0624/progame"
       target="_blank"
       class="logo"
       title="查看抢钱大作战的玩法和帮助"
       >抢钱大作战</a
-    >
+    > -->
+    <div class="logo" @click="toURL" title="查看抢钱大作战的玩法和帮助"></div>
     <div class="head"></div>
     <div class="list">
       <el-row class="rows">
@@ -24,7 +25,7 @@
               <div v-if="!All[item.name]" class="notstart">敬请期待</div>
               <div v-else>
                 <el-row class="item" v-for="(it, i) in All[item.name]" :key="i">
-                  <el-col :span="6">
+                  <el-col :span="6" title="Nihaoyo ">
                     <img
                       class="img"
                       v-if="i == 0"
@@ -43,7 +44,7 @@
                     <div v-if="i > 2">{{ i + 1 }}</div>
                   </el-col>
                   <el-col :span="10">
-                    {{ it.Name.slice(0, 6) }}
+                    {{ it.Name.slice(0, 12) }}
                   </el-col>
                   <el-col :span="8">
                     {{ it.Gold }}
@@ -77,6 +78,7 @@
 
 <script>
 let _this;
+import screenfull from 'screenfull';
 export default {
   head() {
     return {
@@ -88,6 +90,7 @@ export default {
       loopId: '',
       All: {},
       Gid: 0,
+      isFullscreen: false,
       tabs: [
         { label: '当前得分', name: 'Total' },
         { label: '第一次排名', name: 'First' },
@@ -116,6 +119,14 @@ export default {
     onSort() {
       //排序，已废弃
       _this.record.sort(compare('coin'));
+    },
+    toURL() {
+      open('https://github.com/huji0624/progame');
+    },
+    clickFullscreen() {
+      if (this.isFullscreen) return;
+      screenfull.toggle();
+      this.isFullscreen = true;
     },
   },
   created() {
@@ -175,14 +186,19 @@ let compare = function (prop) {
   .logo {
     font-family: 'FZJZJT';
     position: fixed;
-    left: 35px;
-    top: 15px;
+    left: 0px;
+    top: 0px;
     margin-top: 0;
     font-size: 30px;
     z-index: 10;
     color: #fff;
-    text-shadow: 0 0 4px #fff, 0 -5px 4px #ff3, 2px -10px 6px #fd3,
-      -2px -15px 10px #f80, 2px -25px 20px #f20;
+    width: 185px;
+    height: 60px;
+    background: url(../assets/images/logo.png);
+    background-size: 100% 100%;
+    cursor: pointer;
+    // text-shadow: 0 0 4px #fff, 0 -5px 4px #ff3, 2px -10px 6px #fd3,
+    //   -2px -15px 10px #f80, 2px -25px 20px #f20;
 
     // text-shadow: 0 -1px 0 #123; 凹进效果
     // text-shadow: 0 -1px 1px #eee; 凸出效果
@@ -242,13 +258,14 @@ let compare = function (prop) {
 
         .item {
           margin: 3px;
+          transition: all 0.2s;
           // box-shadow: 0px 2px 10px 0px rgba(198, 198, 198, 0.5);
           .img {
             padding-top: 10px;
           }
         }
         .item:hover {
-          background: #320a65;
+          background: #587c82;
         }
         .no {
           color: #fff;
