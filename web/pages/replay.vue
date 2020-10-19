@@ -24,7 +24,6 @@
           <div class="gold">{{ it.gold }}</div>
           <div v-if="it.players">
             <div v-for="(it, i) in it.players" :key="i">
-              <!-- <marquee  behavior="alternate" scrollamount="2"> -->
               <div class="item" :class="{ focus: it.isFocus }" v-if="i < 3">
                 <div v-if="(it.Name + it.Gold).length > 8">
                   <marquee scrollamount="2">
@@ -33,8 +32,6 @@
                 </div>
                 <div v-else>{{ it.Name }} - {{ it.Gold }}</div>
               </div>
-              <!-- {{ it.Name.slice(0, 4) }} - {{ it.Gold }} -->
-              <!-- </marquee> -->
             </div>
           </div>
         </div>
@@ -47,6 +44,17 @@
           </div>
           <div class="list" v-for="(it, i) in playersInfo" :key="i">
             {{ i + 1 }}、团队：<span class="name">{{ it.Name }}</span>
+            金币：
+            <span class="gold">{{ it.Gold }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="rank">
+        <div class="conta">
+          <div class="tips">本局游戏排名</div>
+
+          <div class="crtPos" v-for="(it, i) in allPlayersRank" :key="i">
+            {{ i + 1 }} 团队：<span class="name">{{ it.Name }}</span>
             金币：
             <span class="gold">{{ it.Gold }}</span>
           </div>
@@ -106,6 +114,7 @@ export default {
       focusPlayers: [],
       isIndeterminate: false,
       allPlayers: [],
+      allPlayersRank: [],
     };
   },
   watch: {
@@ -220,11 +229,31 @@ export default {
         checkedCount > 0 && checkedCount < this.allPlayers.length;
       this.start();
     },
+    getPlayersGold() {
+      const { x, y, allRound } = this;
+      const tilemap = allRound[allRound.length - 1].Tilemap,
+        afterArr = [];
+      for (let i = 0; i < y; i++) {
+        for (let j = 0; j < x; j++) {
+          const it = tilemap[i][j];
+          const maps = it.Players || [];
+          if (it.Players) {
+            maps.map((it) => {
+              afterArr.push(it);
+            });
+          }
+        }
+      }
+      this.allPlayersRank = afterArr.sort(sortA);
+      console.log(this.allPlayersRank);
+    },
   },
   created() {
     _this = this;
-    if (!_this.nodata) _this.start();
-    else
+    if (!_this.nodata) {
+      _this.getPlayersGold();
+      _this.start();
+    } else
       setTimeout((_) => {
         _this.$router.go(-1);
       }, 3000);
@@ -237,6 +266,9 @@ export default {
 };
 function compare(a, b) {
   if (a.isFocus && !b.isFocus) return -1;
+}
+function sortA(a, b) {
+  if (a.Gold > b.Gold) return -1;
 }
 </script>
 
@@ -332,6 +364,42 @@ function compare(a, b) {
   .popover {
     position: absolute;
     top: 170px;
+    left: 20px;
+    width: 300px;
+    .conta {
+      padding: 12px;
+      z-index: 2000;
+      min-height: 150px;
+      line-height: 1.4;
+      text-align: justify;
+      font-size: 14px;
+      box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+      word-break: break-all;
+      border-radius: 10px;
+      border: 3px @bodercoler solid;
+      color: #1ceaee;
+      background: #1d0957;
+      .list {
+        max-height: 600px;
+        overflow-y: auto;
+      }
+      .crtPos {
+        color: #fcf8a7;
+      }
+      .name {
+        font-weight: bold;
+        width: 150px;
+        color: #409eff;
+      }
+      .gold {
+        font-weight: bold;
+        color: #929a19;
+      }
+    }
+  }
+  .rank {
+    position: absolute;
+    top: 500px;
     left: 20px;
     width: 300px;
     .conta {
