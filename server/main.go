@@ -360,8 +360,8 @@ func ApplyGameLogic(g *Game, playings map[string]*Player) {
 					if r == 0 && p.Info.Gold > 0 {
 
 						num := p.Info.Gold / 10 * 4
-						if num > 100 {
-							num = 100
+						if num > 10 {
+							num = 10
 						}
 						p.Info.Gold = p.Info.Gold + num
 
@@ -1144,15 +1144,15 @@ func RunUnitTest() bool {
 	}
 
 	//test magic gold  11
-	c.Info.Gold = 12
-	d.Info.Gold = 14
-	generateAt(testGame, 5, 4, 11)
+	a.Info.Gold = 2
+	d.Info.Gold = 2
+	generateAt(testGame, 4, 5, 11)
 	PlayOneRound(testGame, testplayers, func(game *Game, playings map[string]*Player) {
-		MovePlayer(testGame, c, 5, 4)
-		MovePlayer(testGame, d, 5, 4)
+		MovePlayer(testGame, a, 4, 5)
+		MovePlayer(testGame, d, 4, 5)
 	}, false)
 
-	if c.Info.X == 5 && c.Info.Y == 4 && d.Info.X == 5 && d.Info.Y == 4 && ((c.Info.Gold == 4 && d.Info.Gold == 10) || (c.Info.Gold == 9 && d.Info.Gold == 5)) {
+	if a.Info.X == 4 && a.Info.Y == 5 && d.Info.X == 4 && d.Info.Y == 5 && ((a.Info.Gold == 2 && d.Info.Gold == -9) || (a.Info.Gold == -9 && d.Info.Gold == 2)) {
 
 	} else {
 		log.Println("a b magic gold 11 test fail.")
