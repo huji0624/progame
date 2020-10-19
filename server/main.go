@@ -993,7 +993,7 @@ func RunUnitTest() bool {
 		MovePlayer(testGame, a, 3, 4)
 
 	}, false)
-	if a.Info.X == 3 && a.Info.Y == 4 && a.Info.Gold == 4 {
+	if a.Info.X == 3 && a.Info.Y == 4 && a.Info.Gold == 5 {
 
 	} else {
 		log.Println("get -1 gold test fail.")
@@ -1028,7 +1028,7 @@ func RunUnitTest() bool {
 		MovePlayer(testGame, d, 3, 5)
 	}, false)
 
-	if a.Info.X == 3 && a.Info.Y == 5 && d.Info.X == 3 && d.Info.Y == 5 && a.Info.Gold == 6 && d.Info.Gold == 4 {
+	if a.Info.X == 3 && a.Info.Y == 5 && d.Info.X == 3 && d.Info.Y == 5 && a.Info.Gold == 7 && d.Info.Gold == 4 {
 
 	} else {
 		log.Println("player gives gold test fail.")
@@ -1036,25 +1036,15 @@ func RunUnitTest() bool {
 		return false
 	}
 
-	PlayOneRound(testGame, testplayers, func(game *Game, playings map[string]*Player) {
-		MovePlayer(testGame, a, 3, 5)
-		MovePlayer(testGame, d, 3, 5)
-	}, false)
-
-	if a.Info.X == 3 && a.Info.Y == 5 && d.Info.X == 3 && d.Info.Y == 5 && a.Info.Gold == 5 && d.Info.Gold == 5 {
-
-	} else {
-		log.Println("player gives gold test fail.")
-		LogStruct(testplayers)
-		return false
-	}
+	a.Info.Gold = 5
+	d.Info.Gold = 5
 
 	PlayOneRound(testGame, testplayers, func(game *Game, playings map[string]*Player) {
 		MovePlayer(testGame, a, 3, 5)
 		MovePlayer(testGame, d, 3, 5)
 	}, false)
 
-	if a.Info.X == 3 && a.Info.Y == 5 && d.Info.X == 3 && d.Info.Y == 5 && a.Info.Gold == 5 && d.Info.Gold == 5 {
+	if a.Info.X == 3 && a.Info.Y == 5 && d.Info.X == 3 && d.Info.Y == 5 && a.Info.Gold == 6 && d.Info.Gold == 6 {
 
 	} else {
 		log.Println("player gives gold test fail.")
