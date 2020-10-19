@@ -357,8 +357,14 @@ func ApplyGameLogic(g *Game, playings map[string]*Player) {
 					//40% interest or lose 4
 					p := GetRandomPlayer(t.players)
 					r := rand.Intn(2)
-					if r == 0 {
-						p.Info.Gold = p.Info.Gold + p.Info.Gold/10*4
+					if r == 0 && p.Info.Gold > 0 {
+
+						num := p.Info.Gold / 10 * 4
+						if num > 100 {
+							num = 100
+						}
+						p.Info.Gold = p.Info.Gold + num
+
 					} else {
 						p.Info.Gold = p.Info.Gold + t.Gold
 					}
@@ -541,7 +547,14 @@ func PlayOneRound(game *Game, playings map[string]*Player, playermove func(game 
 
 	//give out interest
 	for _, v := range playings {
-		v.Info.Gold = v.Info.Gold + v.Info.Gold/10*2
+		if v.Info.Gold > 0 {
+			num := v.Info.Gold / 5
+			if num > 10 {
+				num = 10
+			}
+			v.Info.Gold = v.Info.Gold + num
+		}
+
 	}
 
 	if randomGold {

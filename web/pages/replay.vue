@@ -26,7 +26,7 @@
             <div v-for="(it, i) in it.players" :key="i">
               <!-- <marquee  behavior="alternate" scrollamount="2"> -->
               <div class="item" :class="{ focus: it.isFocus }" v-if="i < 3">
-                <div v-if="it.Name.length > 4">
+                <div v-if="(it.Name + it.Gold).length > 8">
                   <marquee scrollamount="2">
                     {{ it.Name }} - {{ it.Gold }}
                   </marquee>
