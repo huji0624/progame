@@ -347,9 +347,6 @@ func GetRandomPlayer(players map[string]*Player) *Player {
 
 func ApplyGameLogic(g *Game, playings map[string]*Player) {
 
-	xby := false
-	xly := false
-
 	for i := 0; i < MapWidth; i++ {
 		for j := 0; j < MapHeight; j++ {
 			t := g.Tilemap[j][i]
@@ -357,15 +354,23 @@ func ApplyGameLogic(g *Game, playings map[string]*Player) {
 			//randomly give gold to one player
 			if t.Gold != 0 && len(t.players) > 0 {
 				if t.Gold == -4 {
-					//40% interest
+					//40% interest or lose 4
 					p := GetRandomPlayer(t.players)
-					p.Info.Gold = p.Info.Gold + p.Info.Gold/10*4
-				} else if t.Gold == -11 {
-					//all x>y gold lose half
-					xby = true
-				} else if t.Gold == -9 {
-					//all x<y gold lose half
-					xly = true
+					r := rand.Intn(2)
+					if r == 0 {
+						p.Info.Gold = p.Info.Gold + p.Info.Gold/10*4
+					} else {
+						p.Info.Gold = p.Info.Gold + t.Gold
+					}
+				} else if t.Gold == 7 || t.Gold == 11 {
+					//1 player get.multi lose.
+					pcount := len(t.players)
+					p := GetRandomPlayer(t.players)
+					if pcount == 1 {
+						p.Info.Gold += t.Gold
+					} else {
+						p.Info.Gold -= t.Gold
+					}
 				} else if t.Gold > 0 && t.Gold%5 == 0 {
 					pcount := len(t.players)
 					if pcount == 1 {
@@ -381,6 +386,13 @@ func ApplyGameLogic(g *Game, playings map[string]*Player) {
 							v.Info.Gold = each
 						}
 					}
+				} else if t.Gold == 8 {
+					//share Gold
+					pcount := len(t.players)
+					each := t.Gold / pcount
+					for _, v := range t.players {
+						v.Info.Gold += each
+					}
 				} else {
 					p := GetRandomPlayer(t.players)
 					p.Info.Gold += t.Gold
@@ -392,20 +404,6 @@ func ApplyGameLogic(g *Game, playings map[string]*Player) {
 			//who has more gold will give 1/4 of his gold to others
 			if len(t.players) > 1 {
 				GiveGoldProcess(t)
-			}
-		}
-	}
-
-	if xby || xly {
-		for i := 0; i < MapWidth; i++ {
-			for j := 0; j < MapHeight; j++ {
-				t := g.Tilemap[j][i]
-				if xby && i > j {
-					HalfPlayersGold(t.players)
-				}
-				if xly && i < j {
-					HalfPlayersGold(t.players)
-				}
 			}
 		}
 	}
@@ -1071,10 +1069,11 @@ func RunUnitTest() bool {
 		MovePlayer(testGame, c, c.Info.X, c.Info.Y)
 	}, false)
 
-	if c.Info.X == 7 && c.Info.Y == 4 && c.Info.Gold == 16 {
+	if c.Info.X == 7 && c.Info.Y == 4 && (c.Info.Gold == 16 || c.Info.Gold == 8) {
 
 	} else {
 		log.Println("magic gold -4 test fail.")
+		LogStruct(c)
 		return false
 	}
 
