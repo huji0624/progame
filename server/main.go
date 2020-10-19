@@ -1159,6 +1159,7 @@ func RunUnitTest() bool {
 
 	LogStruct(testGame)
 	LogStruct(testplayers)
+	log.Println("UnitTest OK!")
 
 	return true
 }
