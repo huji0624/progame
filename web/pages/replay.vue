@@ -42,21 +42,25 @@
           <div v-if="crtPos" class="crtPos">
             当前坐标：{{ crtPos }} 金币数量：{{ crtGold }}
           </div>
-          <div class="list" v-for="(it, i) in playersInfo" :key="i">
-            {{ i + 1 }}、团队：<span class="name">{{ it.Name }}</span>
-            金币：
-            <span class="gold">{{ it.Gold }}</span>
+          <div class="list">
+            <div v-for="(it, i) in playersInfo" :key="i">
+              {{ i + 1 }}、团队：<span class="name">{{ it.Name }}</span>
+              金币：
+              <span class="gold">{{ it.Gold }}</span>
+            </div>
           </div>
         </div>
       </div>
       <div class="rank">
         <div class="conta">
           <div class="tips">本局游戏排名</div>
-
-          <div class="crtPos" v-for="(it, i) in allPlayersRank" :key="i">
-            {{ i + 1 }} 团队：<span class="name">{{ it.Name }}</span>
-            金币：
-            <span class="gold">{{ it.Gold }}</span>
+          <div class="list">
+            <div class="crtPos" v-for="(it, i) in allPlayersRank" :key="i">
+              <span class="ranking"> {{ i + 1 }}</span>
+              团队：<span class="name">{{ it.Name }}</span>
+              金币：
+              <span class="gold">{{ it.Gold }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -64,12 +68,6 @@
         <div class="">
           <div class="tips">选择关注的游戏队伍 <span>最多3个</span></div>
 
-          <!-- <el-checkbox
-            :indeterminate="isIndeterminate"
-            v-model="checkAll"
-            @change="onCheckAll"
-            >全选</el-checkbox
-          > -->
           <div style="margin: 15px 0"></div>
           <div class="list">
             <el-checkbox-group
@@ -218,15 +216,9 @@ export default {
         _this.loopId = 0;
       }
     },
-    onCheckAll(val) {
-      this.focusPlayers = val ? this.allPlayers : [];
-      this.isIndeterminate = false;
-    },
+
     onChangePlayer(value) {
-      let checkedCount = value.length;
-      this.checkAll = checkedCount === this.allPlayers.length;
-      this.isIndeterminate =
-        checkedCount > 0 && checkedCount < this.allPlayers.length;
+      console.log(this.focusPlayers);
       this.start();
     },
     getPlayersGold() {
@@ -369,7 +361,7 @@ function sortA(a, b) {
     .conta {
       padding: 12px;
       z-index: 2000;
-      min-height: 150px;
+      min-height: 130px;
       line-height: 1.4;
       text-align: justify;
       font-size: 14px;
@@ -380,15 +372,16 @@ function sortA(a, b) {
       color: #1ceaee;
       background: #1d0957;
       .list {
-        max-height: 600px;
+        max-height: 95px;
         overflow-y: auto;
       }
       .crtPos {
         color: #fcf8a7;
       }
       .name {
+        display: inline-block;
         font-weight: bold;
-        width: 150px;
+        width: 90px;
         color: #409eff;
       }
       .gold {
@@ -399,7 +392,7 @@ function sortA(a, b) {
   }
   .rank {
     position: absolute;
-    top: 500px;
+    top: 400px;
     left: 20px;
     width: 300px;
     .conta {
@@ -416,16 +409,24 @@ function sortA(a, b) {
       color: #1ceaee;
       background: #1d0957;
       .list {
-        max-height: 600px;
+        max-height: 285px;
         overflow-y: auto;
       }
       .crtPos {
         color: #fcf8a7;
       }
       .name {
+        display: inline-block;
+
         font-weight: bold;
-        width: 150px;
+        width: 90px;
         color: #409eff;
+      }
+      .ranking {
+        display: inline-block;
+
+        font-weight: bold;
+        width: 18px;
       }
       .gold {
         font-weight: bold;
