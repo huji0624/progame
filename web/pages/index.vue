@@ -184,7 +184,6 @@ let compare = function (prop) {
     z-index: 10;
   }
   .logo {
-    font-family: 'FZJZJT';
     position: fixed;
     left: 0px;
     top: 0px;

@@ -24,7 +24,6 @@
           <div class="gold">{{ it.gold }}</div>
           <div v-if="it.players">
             <div v-for="(it, i) in it.players" :key="i">
-              <!-- <marquee  behavior="alternate" scrollamount="2"> -->
               <div class="item" :class="{ focus: it.isFocus }" v-if="i < 3">
                 <div v-if="(it.Name + it.Gold).length > 8">
                   <marquee scrollamount="2">
@@ -33,8 +32,6 @@
                 </div>
                 <div v-else>{{ it.Name }} - {{ it.Gold }}</div>
               </div>
-              <!-- {{ it.Name.slice(0, 4) }} - {{ it.Gold }} -->
-              <!-- </marquee> -->
             </div>
           </div>
         </div>
@@ -45,10 +42,25 @@
           <div v-if="crtPos" class="crtPos">
             当前坐标：{{ crtPos }} 金币数量：{{ crtGold }}
           </div>
-          <div class="list" v-for="(it, i) in playersInfo" :key="i">
-            {{ i + 1 }}、团队：<span class="name">{{ it.Name }}</span>
-            金币：
-            <span class="gold">{{ it.Gold }}</span>
+          <div class="list">
+            <div v-for="(it, i) in playersInfo" :key="i">
+              {{ i + 1 }}、团队：<span class="name">{{ it.Name }}</span>
+              金币：
+              <span class="gold">{{ it.Gold }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="rank">
+        <div class="conta">
+          <div class="tips">本局游戏排名</div>
+          <div class="list">
+            <div class="crtPos" v-for="(it, i) in allPlayersRank" :key="i">
+              <span class="ranking"> {{ i + 1 }}</span>
+              团队：<span class="name">{{ it.Name }}</span>
+              金币：
+              <span class="gold">{{ it.Gold }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -56,12 +68,6 @@
         <div class="">
           <div class="tips">选择关注的游戏队伍 <span>最多3个</span></div>
 
-          <!-- <el-checkbox
-            :indeterminate="isIndeterminate"
-            v-model="checkAll"
-            @change="onCheckAll"
-            >全选</el-checkbox
-          > -->
           <div style="margin: 15px 0"></div>
           <div class="list">
             <el-checkbox-group
@@ -106,6 +112,7 @@ export default {
       focusPlayers: [],
       isIndeterminate: false,
       allPlayers: [],
+      allPlayersRank: [],
     };
   },
   watch: {
@@ -209,22 +216,36 @@ export default {
         _this.loopId = 0;
       }
     },
-    onCheckAll(val) {
-      this.focusPlayers = val ? this.allPlayers : [];
-      this.isIndeterminate = false;
-    },
+
     onChangePlayer(value) {
-      let checkedCount = value.length;
-      this.checkAll = checkedCount === this.allPlayers.length;
-      this.isIndeterminate =
-        checkedCount > 0 && checkedCount < this.allPlayers.length;
+      console.log(this.focusPlayers);
       this.start();
+    },
+    getPlayersGold() {
+      const { x, y, allRound } = this;
+      const tilemap = allRound[allRound.length - 1].Tilemap,
+        afterArr = [];
+      for (let i = 0; i < y; i++) {
+        for (let j = 0; j < x; j++) {
+          const it = tilemap[i][j];
+          const maps = it.Players || [];
+          if (it.Players) {
+            maps.map((it) => {
+              afterArr.push(it);
+            });
+          }
+        }
+      }
+      this.allPlayersRank = afterArr.sort(sortA);
+      console.log(this.allPlayersRank);
     },
   },
   created() {
     _this = this;
-    if (!_this.nodata) _this.start();
-    else
+    if (!_this.nodata) {
+      _this.getPlayersGold();
+      _this.start();
+    } else
       setTimeout((_) => {
         _this.$router.go(-1);
       }, 3000);
@@ -237,6 +258,9 @@ export default {
 };
 function compare(a, b) {
   if (a.isFocus && !b.isFocus) return -1;
+}
+function sortA(a, b) {
+  if (a.Gold > b.Gold) return -1;
 }
 </script>
 
@@ -337,6 +361,43 @@ function compare(a, b) {
     .conta {
       padding: 12px;
       z-index: 2000;
+      min-height: 130px;
+      line-height: 1.4;
+      text-align: justify;
+      font-size: 14px;
+      box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+      word-break: break-all;
+      border-radius: 10px;
+      border: 3px @bodercoler solid;
+      color: #1ceaee;
+      background: #1d0957;
+      .list {
+        max-height: 95px;
+        overflow-y: auto;
+      }
+      .crtPos {
+        color: #fcf8a7;
+      }
+      .name {
+        display: inline-block;
+        font-weight: bold;
+        width: 90px;
+        color: #409eff;
+      }
+      .gold {
+        font-weight: bold;
+        color: #929a19;
+      }
+    }
+  }
+  .rank {
+    position: absolute;
+    top: 400px;
+    left: 20px;
+    width: 300px;
+    .conta {
+      padding: 12px;
+      z-index: 2000;
       min-height: 150px;
       line-height: 1.4;
       text-align: justify;
@@ -348,16 +409,24 @@ function compare(a, b) {
       color: #1ceaee;
       background: #1d0957;
       .list {
-        max-height: 600px;
+        max-height: 285px;
         overflow-y: auto;
       }
       .crtPos {
         color: #fcf8a7;
       }
       .name {
+        display: inline-block;
+
         font-weight: bold;
-        width: 150px;
+        width: 90px;
         color: #409eff;
+      }
+      .ranking {
+        display: inline-block;
+
+        font-weight: bold;
+        width: 18px;
       }
       .gold {
         font-weight: bold;
