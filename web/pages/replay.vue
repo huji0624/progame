@@ -36,7 +36,9 @@
           </div>
         </div>
       </div>
-      <div class="popover">
+
+      <!-- 悬浮盒子 -->
+      <div class="wrapbox focusOver">
         <div class="conta">
           <div class="tips">棋盘格信息</div>
           <div v-if="crtPos" class="crtPos">
@@ -44,31 +46,30 @@
           </div>
           <div class="list">
             <div v-for="(it, i) in playersInfo" :key="i">
-              {{ i + 1 }}、团队：<span class="name">{{ it.Name }}</span>
+              {{ i + 1 }}、团队：<span class="tname">{{ it.Name }}</span>
               金币：
               <span class="gold">{{ it.Gold }}</span>
             </div>
           </div>
         </div>
       </div>
-      <div class="rank">
+      <div class="wrapbox rank">
         <div class="conta">
           <div class="tips">本局游戏排名</div>
           <div class="list">
             <div class="crtPos" v-for="(it, i) in allPlayersRank" :key="i">
               <span class="ranking"> {{ i + 1 }}</span>
-              团队：<span class="name">{{ it.Name }}</span>
+              团队：<span class="tname">{{ it.Name }}</span>
               金币：
               <span class="gold">{{ it.Gold }}</span>
             </div>
           </div>
         </div>
       </div>
-      <div class="playerlist">
+      <div class="wrapbox playerlist">
         <div class="">
           <div class="tips">选择关注的游戏队伍 <span>最多3个</span></div>
 
-          <div style="margin: 15px 0"></div>
           <div class="list">
             <el-checkbox-group
               v-model="focusPlayers"
@@ -77,9 +78,23 @@
               @change="onChangePlayer"
             >
               <el-checkbox v-for="it in allPlayers" :label="it" :key="it">
-                {{ it.slice(0, 8) }}
+                {{ it.Name.slice(0, 8) }}
               </el-checkbox>
             </el-checkbox-group>
+          </div>
+        </div>
+      </div>
+      <div class="wrapbox focusPlayer">
+        <div class="">
+          <div class="tips">关注的游戏队伍</div>
+          <div style="margin: 15px 0"></div>
+          <div class="list">
+            <div class="crtPos" v-for="(it, i) in focusPlayers" :key="i">
+              <span class="ranking"> {{ i + 1 }}、</span>
+              <span class="tname">{{ it.Name }}</span>
+              的金币变更为
+              <span class="gold">{{ it.Gold }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -152,13 +167,13 @@ export default {
           //只有第一次进来才遍历全部玩家
           if (this.isFirst && it.Players) {
             maps.map((it) => {
-              this.allPlayers.push(it.Name);
+              this.allPlayers.push(it);
             });
           }
           //添加关注玩家
           newA = maps.map((it) => {
-            _this.focusPlayers.includes(it.Name) && (it.isFocus = true);
-            !_this.focusPlayers.includes(it.Name) && (it.isFocus = false);
+            _this.focusPlayers.includes(it) && (it.isFocus = true);
+            !_this.focusPlayers.includes(it) && (it.isFocus = false);
             return it;
           });
           //关注玩家排名靠前
@@ -353,113 +368,84 @@ function sortA(a, b) {
       background: #eee;
     }
   }
-  .popover {
-    position: absolute;
-    top: 170px;
-    left: 20px;
-    width: 300px;
-    .conta {
-      padding: 12px;
-      z-index: 2000;
-      min-height: 130px;
-      line-height: 1.4;
-      text-align: justify;
-      font-size: 14px;
-      box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-      word-break: break-all;
-      border-radius: 10px;
-      border: 3px @bodercoler solid;
-      color: #1ceaee;
-      background: #1d0957;
-      .list {
-        max-height: 95px;
-        overflow-y: auto;
-      }
-      .crtPos {
-        color: #fcf8a7;
-      }
-      .name {
-        display: inline-block;
-        font-weight: bold;
-        width: 90px;
-        color: #409eff;
-      }
-      .gold {
-        font-weight: bold;
-        color: #929a19;
-      }
-    }
-  }
-  .rank {
-    position: absolute;
-    top: 400px;
-    left: 20px;
-    width: 300px;
-    .conta {
-      padding: 12px;
-      z-index: 2000;
-      min-height: 150px;
-      line-height: 1.4;
-      text-align: justify;
-      font-size: 14px;
-      box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-      word-break: break-all;
-      border-radius: 10px;
-      border: 3px @bodercoler solid;
-      color: #1ceaee;
-      background: #1d0957;
-      .list {
-        max-height: 285px;
-        overflow-y: auto;
-      }
-      .crtPos {
-        color: #fcf8a7;
-      }
-      .name {
-        display: inline-block;
 
-        font-weight: bold;
-        width: 90px;
-        color: #409eff;
-      }
-      .ranking {
-        display: inline-block;
-
-        font-weight: bold;
-        width: 18px;
-      }
-      .gold {
-        font-weight: bold;
-        color: #929a19;
-      }
-    }
-  }
-  .playerlist {
+  .wrapbox {
     position: absolute;
     top: 170px;
     right: 20px;
     width: 300px;
     font-size: 14px;
     padding: 12px;
-    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+    color: #1ceaee;
     word-break: break-all;
     border-radius: 10px;
     border: 3px @bodercoler solid;
-
-    color: #1ceaee;
     background: #1d0957;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+    .tips {
+      font-size: 20px;
+      font-weight: bold;
+      line-height: 30px;
+      span {
+        font-size: 13px;
+        font-weight: 300;
+      }
+    }
     .list {
       min-width: 150px;
-      padding: 12px;
       z-index: 2000;
       width: 300px;
-      // min-height: 150px;
-      max-height: 600px;
+      max-height: 200px;
       line-height: 1.4;
       text-align: justify;
       overflow-y: auto;
     }
   }
+  .playerlist {
+    top: 400px;
+    right: 20px;
+  }
+  .focusPlayer {
+    top: 170px;
+    right: 20px;
+    .ranking {
+      display: inline-block;
+      font-weight: bold;
+      width: 18px;
+    }
+  }
+  .focusOver {
+    top: 170px;
+    left: 20px;
+    .crtPos {
+      text-align: left;
+      color: #fcf8a7;
+      line-height: 30px;
+    }
+  }
+  .rank {
+    top: 400px;
+    left: 20px;
+    .ranking {
+      font-size: 16px;
+      color: #fcf8a7;
+      display: inline-block;
+      font-weight: bold;
+      width: 18px;
+    }
+  }
+  .tname {
+    display: inline-block;
+    font-size: 16px;
+    font-weight: bold;
+    width: 90px;
+    color: #add5fd;
+  }
+  .gold {
+    font-weight: bold;
+    color: #ffeb00;
+  }
+
   .nodata {
     color: #fff;
     width: 300px;
@@ -468,14 +454,6 @@ function sortA(a, b) {
     border-radius: 5px;
     color: #64dbf3;
     border: @bodercoler 2px solid;
-  }
-  .tips {
-    font-size: 20px;
-    font-weight: bold;
-    span {
-      font-size: 13px;
-      font-weight: 300;
-    }
   }
 }
 </style>
