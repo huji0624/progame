@@ -454,10 +454,10 @@ func GiveGoldProcess(t *Tile) {
 
 func RandomGenGold(g *Game, playings map[string]*Player) {
 
-	n := MapHeight * MapWidth / 6
+	n := MapHeight * MapWidth / 4
 	for i := 0; i < n; i++ {
 		r1 := rand.Intn(12)
-		r2 := rand.Intn(10)
+		r2 := rand.Intn(9)
 		r := r1 - r2
 
 		x := rand.Intn(MapWidth)
