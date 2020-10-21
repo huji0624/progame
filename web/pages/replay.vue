@@ -1,6 +1,6 @@
 <template>
   <div class="container">
-    <div v-if="nodata" class="nodata">该局游戏不存在</div>
+    <div v-if="nodata" class="noGame">该局游戏不存在</div>
     <div v-else>
       <el-page-header @back="$router.go(-1)" content="回放详情">
       </el-page-header>
@@ -41,7 +41,8 @@
       <div class="wrapbox focusOver">
         <div class="conta">
           <div class="tips">棋盘格信息</div>
-          <div v-if="crtPos" class="crtPos">
+          <div v-if="!crtPos" class="nodata">鼠标移过棋盘，展示数据</div>
+          <div v-else class="crtPos">
             当前坐标：{{ crtPos }} 金币数量：{{ crtGold }}
           </div>
           <div class="list">
@@ -56,7 +57,10 @@
       <div class="wrapbox rank">
         <div class="conta">
           <div class="tips">本局游戏排名</div>
-          <div class="list">
+          <div v-if="allPlayersRank.length == 0" class="nodata">
+            暂无游戏队伍
+          </div>
+          <div v-else class="list">
             <div class="crtPos" v-for="(it, i) in allPlayersRank" :key="i">
               <span class="ranking"> {{ i + 1 }}</span>
               团队：<span class="tname">{{ it.Name }}</span>
@@ -69,16 +73,16 @@
       <div class="wrapbox playerlist">
         <div class="">
           <div class="tips">选择关注的游戏队伍 <span>最多3个</span></div>
-
-          <div class="list">
+          <div v-if="allPlayers.length == 0" class="nodata">暂无游戏队伍</div>
+          <div v-else class="list">
             <el-checkbox-group
-              v-model="focusPlayers"
+              v-model="focusChecked"
               :max="3"
               text-color="#eee"
               @change="onChangePlayer"
             >
               <el-checkbox v-for="it in allPlayers" :label="it" :key="it">
-                {{ it.Name.slice(0, 8) }}
+                {{ it.slice(0, 8) }}
               </el-checkbox>
             </el-checkbox-group>
           </div>
@@ -87,8 +91,10 @@
       <div class="wrapbox focusPlayer">
         <div class="">
           <div class="tips">关注的游戏队伍</div>
-          <div style="margin: 15px 0"></div>
-          <div class="list">
+          <div v-if="focusPlayers.length == 0" class="nodata">
+            请在下方选择游戏队伍
+          </div>
+          <div v-else class="list">
             <div class="crtPos" v-for="(it, i) in focusPlayers" :key="i">
               <span class="ranking"> {{ i + 1 }}、</span>
               <span class="tname">{{ it.Name }}</span>
@@ -104,7 +110,6 @@
 
 <script>
 let _this;
-const allPlayers = [];
 export default {
   head() {
     return {
@@ -121,10 +126,10 @@ export default {
       crtGold: '',
       players: [],
       total: [],
-
       isFirst: true,
       checkAll: false,
       focusPlayers: [],
+      focusChecked: [],
       isIndeterminate: false,
       allPlayers: [],
       allPlayersRank: [],
@@ -153,11 +158,12 @@ export default {
 
   methods: {
     start() {
-      let { x, y, players, roundNo, allRound, focusPlayers } = this;
+      let { x, y, players, roundNo, allRound, focusChecked } = this;
       if (roundNo > allRound.length - 1) return false;
 
       const tilemap = allRound[roundNo].Tilemap,
         afterArr = [];
+      let focusPlayers = [];
 
       for (let i = 0; i < y; i++) {
         for (let j = 0; j < x; j++) {
@@ -167,13 +173,14 @@ export default {
           //只有第一次进来才遍历全部玩家
           if (this.isFirst && it.Players) {
             maps.map((it) => {
-              this.allPlayers.push(it);
+              this.allPlayers.push(it.Name);
             });
           }
           //添加关注玩家
           newA = maps.map((it) => {
-            _this.focusPlayers.includes(it) && (it.isFocus = true);
-            !_this.focusPlayers.includes(it) && (it.isFocus = false);
+            _this.focusChecked.includes(it.Name) &&
+              ((it.isFocus = true), focusPlayers.push(it));
+            !_this.focusChecked.includes(it.Name) && (it.isFocus = false);
             return it;
           });
           //关注玩家排名靠前
@@ -188,6 +195,7 @@ export default {
       }
       this.isFirst = false;
       this.total = afterArr;
+      _this.focusPlayers = focusPlayers.sort(sortA);
     },
 
     mouseOver(it) {
@@ -233,7 +241,6 @@ export default {
     },
 
     onChangePlayer(value) {
-      console.log(this.focusPlayers);
       this.start();
     },
     getPlayersGold() {
@@ -408,6 +415,7 @@ function sortA(a, b) {
   .focusPlayer {
     top: 170px;
     right: 20px;
+
     .ranking {
       display: inline-block;
       font-weight: bold;
@@ -445,8 +453,11 @@ function sortA(a, b) {
     font-weight: bold;
     color: #ffeb00;
   }
-
   .nodata {
+    line-height: 50px;
+  }
+
+  .noGame {
     color: #fff;
     width: 300px;
     margin: 350px auto;
