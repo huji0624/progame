@@ -456,8 +456,8 @@ func RandomGenGold(g *Game, playings map[string]*Player) {
 
 	n := MapHeight * MapWidth / 6
 	for i := 0; i < n; i++ {
-		r1 := rand.Intn(8)
-		r2 := rand.Intn(6)
+		r1 := rand.Intn(10)
+		r2 := rand.Intn(10)
 		r := r1 - r2
 
 		x := rand.Intn(MapWidth)
@@ -673,7 +673,9 @@ func SaveGameResult(g *Game) {
 
 	tmpScore := make(map[string]int)
 	for _, p := range connections {
-		tmpScore[p.Info.Key] = p.Info.Gold
+		if p.rc != nil {
+			tmpScore[p.Info.Key] = p.Info.Gold
+		}
 	}
 	records.Scores[records.Index] = tmpScore
 	records.Index++
