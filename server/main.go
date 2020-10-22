@@ -402,6 +402,9 @@ func ApplyGameLogic(g *Game, playings map[string]*Player) {
 				} else {
 					p := GetRandomPlayer(t.players)
 					p.Info.Gold += t.Gold
+					if p.Info.Gold < 0 {
+						p.Info.Gold = 0
+					}
 				}
 
 				t.Gold = 0
@@ -454,10 +457,10 @@ func GiveGoldProcess(t *Tile) {
 
 func RandomGenGold(g *Game, playings map[string]*Player) {
 
-	n := MapHeight * MapWidth / 6
+	n := MapHeight * MapWidth / 2
 	for i := 0; i < n; i++ {
 		r1 := rand.Intn(10)
-		r2 := rand.Intn(10)
+		r2 := rand.Intn(6)
 		r := r1 - r2
 
 		x := rand.Intn(MapWidth)
