@@ -1,5 +1,6 @@
 <template>
-  <section class="main" @mousemove="clickFullscreen">
+  <!-- <section class="main" @mousemove="clickFullscreen"> -->
+  <section class="main">
     <!-- <a
       href="https://github.com/huji0624/progame"
       target="_blank"
@@ -9,6 +10,18 @@
     > -->
     <div class="logo" @click="toURL" title="查看抢钱大作战的玩法和帮助"></div>
     <div class="head"></div>
+    <div class="isall">
+      <el-popover
+        placement="top"
+        width="300"
+        trigger="hover"
+        content="筛选具有排名资格的玩家，即最近游戏中参与超过64局游戏的游戏玩家。"
+      >
+        <el-checkbox v-model="isAll" slot="reference">
+          查看资格对局排名
+        </el-checkbox>
+      </el-popover>
+    </div>
     <div class="list">
       <el-row class="rows">
         <el-col :span="6" v-for="(item, i) in tabs" :key="i">
@@ -22,7 +35,12 @@
               </el-row>
             </div>
             <div class="row">
-              <div v-if="!All[item.name]" class="notstart">敬请期待</div>
+              <div
+                v-if="!All[item.name] || All[item.name].length == 0"
+                class="notstart"
+              >
+                敬请期待
+              </div>
               <div v-else>
                 <el-row class="item" v-for="(it, i) in All[item.name]" :key="i">
                   <el-col :span="6" title="Nihaoyo ">
@@ -88,7 +106,9 @@ export default {
   data() {
     return {
       loopId: '',
+      isAll: false,
       All: {},
+      respGames: {},
       Gid: 0,
       isFullscreen: false,
       tabs: [
@@ -105,6 +125,12 @@ export default {
   //     { Gid } = res;
   //   return { Gid, All };
   // },
+  watch: {
+    isAll(n) {
+      if (n === true) this.checkAll(n);
+      else this.All = this.respGames;
+    },
+  },
   mounted() {
     _this.loopId = setInterval(() => {
       _this.init();
@@ -114,6 +140,9 @@ export default {
     async init() {
       let res = await _this.$axios.get('rank');
       _this.All = res;
+      if (this.isAll) this.checkAll();
+
+      _this.respGames = _this.$deepCopy(res);
       _this.Gid = res.Gid || 0;
     },
     onSort() {
@@ -127,6 +156,19 @@ export default {
       if (this.isFullscreen) return;
       screenfull.toggle();
       this.isFullscreen = true;
+    },
+    checkAll() {
+      let { All } = this;
+
+      let changes = {};
+      for (const key in All) {
+        if (All[key] && All[key] instanceof Array) {
+          const element = All[key].filter((it) => it.GameCount > 63);
+          changes[key] = element;
+        } else changes[key] = All[key];
+      }
+      _this.All = changes;
+      console.log(_this.All);
     },
   },
   created() {
@@ -180,6 +222,16 @@ let compare = function (prop) {
     background-image: url('../assets/images/list.png');
     background-size: 100% 100%;
     // padding: 10px;
+    font-size: 20px;
+    z-index: 10;
+  }
+  .isall {
+    position: fixed;
+    left: 60px;
+    top: 70px;
+    margin-top: 0;
+    width: 450px;
+    height: 108px;
     font-size: 20px;
     z-index: 10;
   }
@@ -318,5 +370,30 @@ let compare = function (prop) {
       font-weight: bold;
     }
   }
+}
+</style>
+
+<style lang="less">
+.el-checkbox__input.is-checked .el-checkbox__inner {
+  background-color: #04def0;
+  border-color: #04def0;
+}
+.el-checkbox__input.is-checked + .el-checkbox__label {
+  color: #04def0;
+}
+.el-checkbox {
+  color: #04def0;
+  line-height: 30px;
+}
+.el-checkbox__input.is-indeterminate .el-checkbox__inner {
+  background-color: #04def0;
+  border-color: #04def0;
+}
+.el-page-header__content {
+  font-size: 18px;
+  color: #04def0;
+}
+.el-checkbox__label {
+  width: 90px;
 }
 </style>

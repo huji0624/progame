@@ -402,7 +402,7 @@ function sortA(a, b) {
       min-width: 150px;
       z-index: 2000;
       width: 300px;
-      max-height: 200px;
+      max-height: 300px;
       line-height: 1.4;
       text-align: justify;
       overflow-y: auto;
@@ -430,6 +430,9 @@ function sortA(a, b) {
       color: #fcf8a7;
       line-height: 30px;
     }
+    .list {
+      max-height: 160px;
+    }
   }
   .rank {
     top: 400px;
@@ -439,7 +442,7 @@ function sortA(a, b) {
       color: #fcf8a7;
       display: inline-block;
       font-weight: bold;
-      width: 18px;
+      width: 22px;
     }
   }
   .tname {
@@ -466,30 +469,5 @@ function sortA(a, b) {
     color: #64dbf3;
     border: @bodercoler 2px solid;
   }
-}
-</style>
-
-<style lang="less">
-.el-checkbox__input.is-checked .el-checkbox__inner {
-  background-color: #04def0;
-  border-color: #04def0;
-}
-.el-checkbox__input.is-checked + .el-checkbox__label {
-  color: #04def0;
-}
-.el-checkbox {
-  color: #04def0;
-  line-height: 30px;
-}
-.el-checkbox__input.is-indeterminate .el-checkbox__inner {
-  background-color: #04def0;
-  border-color: #04def0;
-}
-.el-page-header__content {
-  font-size: 18px;
-  color: #04def0;
-}
-.el-checkbox__label {
-  width: 90px;
 }
 </style>
