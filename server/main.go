@@ -696,8 +696,11 @@ func SaveGameResult(g *Game) {
 		}
 	}
 	for k, v := range totalScore {
-		av := v / totalCount[k]
-		ps = append(ps, &GameScore{Name: k, Gold: av})
+		tc := totalCount[k]
+		av := v / tc
+		if tc > 3 {
+			ps = append(ps, &GameScore{Name: k, Gold: av})
+		}
 	}
 	sort.Slice(ps, func(i, j int) bool { return ps[i].Gold > ps[j].Gold })
 
