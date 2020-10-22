@@ -18,7 +18,7 @@
         content="筛选具有排名资格的玩家，即最近游戏中参与超过64局游戏的游戏玩家。"
       >
         <el-checkbox v-model="isAll" slot="reference">
-          查看资格对局排名
+          查看资格玩家排名
         </el-checkbox>
       </el-popover>
     </div>

@@ -120,7 +120,7 @@ ws.send(JSON.stringify({msgtype:4,token:your_token,x:x,y:y,RoundID:RoundID}));
 
 ##### 特别注意：向服务器端发送的是 token，服务器返回的是你的队伍名字。
 
-0x4、后端服务启动后，你可以在浏览器打开`http://localhost:8881`查看本地对局排名情况，查看本地进 30 局回放。
+0x4、后端服务启动后，你可以在浏览器打开`http://localhost:8881`查看本地对局排名情况，查看本地最近 30 局回放。
 
 ##### 我们在 `testclient` 目录下存放了使用 JavaScript 和 python 语言编写的测试案例，用于帮助你理解游戏规则，也帮助你清晰怎么做。
 

@@ -449,7 +449,7 @@ function sortA(a, b) {
     display: inline-block;
     font-size: 16px;
     font-weight: bold;
-    width: 90px;
+    width: 96px;
     color: #add5fd;
   }
   .gold {
@@ -469,5 +469,29 @@ function sortA(a, b) {
     color: #64dbf3;
     border: @bodercoler 2px solid;
   }
+}
+</style>
+<style lang="less">
+.el-checkbox__input.is-checked .el-checkbox__inner {
+  background-color: #04def0;
+  border-color: #04def0;
+}
+.el-checkbox__input.is-checked + .el-checkbox__label {
+  color: #04def0;
+}
+.el-checkbox {
+  color: #04def0;
+  line-height: 30px;
+}
+.el-checkbox__input.is-indeterminate .el-checkbox__inner {
+  background-color: #04def0;
+  border-color: #04def0;
+}
+.el-page-header__content {
+  font-size: 18px;
+  color: #04def0;
+}
+.el-checkbox__label {
+  width: 90px;
 }
 </style>
