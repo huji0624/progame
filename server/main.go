@@ -459,7 +459,7 @@ func RandomGenGold(g *Game, playings map[string]*Player) {
 
 	n := MapHeight * MapWidth / 2
 	for i := 0; i < n; i++ {
-		r1 := rand.Intn(6)
+		r1 := rand.Intn(5)
 		r2 := rand.Intn(3)
 		r := r1 - r2
 
