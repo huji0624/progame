@@ -217,14 +217,19 @@ func PublicToClientData(data []byte) {
 	}
 }
 
+type PlayerGold struct {
+	Name string
+	Gold int
+}
+
 func pubGameMap(g *Game) []byte {
 	for i := 0; i < MapWidth; i++ {
 		for j := 0; j < MapHeight; j++ {
 			t := g.Tilemap[j][i]
 			if len(t.players) > 0 {
-				tmp := make([]*GameScore, 0, 3)
+				tmp := make([]*PlayerGold, 0, 3)
 				for _, v := range t.players {
-					tmp = append(tmp, &GameScore{Name: v.Info.Key, Gold: v.Info.Gold})
+					tmp = append(tmp, &PlayerGold{Name: v.Info.Key, Gold: v.Info.Gold})
 				}
 
 				t.P = tmp
@@ -330,7 +335,7 @@ func CheckGameOver(g *Game) bool {
 
 type Tile struct {
 	Gold    int
-	P       []*GameScore `json:"Players,omitempty"`
+	P       []*PlayerGold `json:"Players,omitempty"`
 	players map[string]*Player
 }
 
@@ -698,9 +703,7 @@ func SaveGameResult(g *Game) {
 	for k, v := range totalScore {
 		tc := totalCount[k]
 		av := v / tc
-		if tc > 3 {
-			ps = append(ps, &GameScore{Name: k, Gold: av})
-		}
+		ps = append(ps, &GameScore{Name: k, Gold: av, GameCount: tc})
 	}
 	sort.Slice(ps, func(i, j int) bool { return ps[i].Gold > ps[j].Gold })
 
@@ -729,8 +732,9 @@ type GameRank struct {
 }
 
 type GameScore struct {
-	Name string
-	Gold int
+	Name      string
+	Gold      int
+	GameCount int
 }
 
 type Rank struct {
