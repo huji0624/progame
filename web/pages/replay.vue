@@ -300,7 +300,7 @@ function sortA(a, b) {
     color: @bodercoler;
   }
   .btns {
-    margin: 30px auto;
+    margin: 10px auto 30px;
 
     .btn {
       color: #04def0;
