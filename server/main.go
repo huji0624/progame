@@ -67,10 +67,17 @@ func LogStruct(v interface{}) {
 func WriteToClient(c *websocket.Conn, v interface{}) {
 	// log.Println("will write data:")
 	// LogStruct(v)
-	c.WriteJSON(v)
+	outtime := time.Now().Add(1 * time.Second)
+	c.SetWriteDeadline(outtime)
+	err := c.WriteJSON(v)
+	if err != nil {
+		log.Println("write err:", err)
+	}
 }
 
 func WriteToClientData(c *websocket.Conn, data []byte) {
+	outtime := time.Now().Add(1 * time.Second)
+	c.SetWriteDeadline(outtime)
 	err := c.WriteMessage(websocket.TextMessage, data)
 	if err != nil {
 		log.Println("write err:", err)
