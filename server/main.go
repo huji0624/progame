@@ -499,6 +499,7 @@ func ReadLoop(p *Player, token string) {
 			}
 		} else {
 			log.Println("ReadLoop read token:", token, " err:", err, " player will not move.")
+			p.rc <- &Msg{Msgtype: -2}
 			close(p.rc)
 			p.rc = nil
 			break
@@ -540,7 +541,10 @@ func RunPlayerMoves(game *Game, playings map[string]*Player) {
 		} else if msg.Msgtype == -1 {
 			MovePlayer(game, v, v.Info.X, v.Info.Y)
 		} else {
-			KickPlayer(v)
+			tile := g_game.Tilemap[v.Info.Y][v.Info.X]
+			delete(tile.players, v.Info.Key)
+
+			// KickPlayer(v)
 		}
 	}
 }
@@ -664,7 +668,8 @@ func GameLoop() {
 			}
 		}
 
-		if len(connections) == 0 {
+		if len(connections) <= 1 {
+			log.Println("Prepare Players less than 2")
 			continue
 		}
 
