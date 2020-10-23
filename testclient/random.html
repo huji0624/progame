@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>随机机器人</title>
+    <style>
+      #sse {
+        margin: 50px auto;
+        width: 400px;
+        text-align: center;
+      }
+      #sse a {
+        padding: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="sse">
+      <input type="text" value="" id="token" />
+      <br />
+      <a href="javascript:WebSocketTest()">运行 WebSocket</a>
+      <a href="javascript:onClose()">断开 WebSocket</a>
+    </div>
+  </body>
+  <script type="text/javascript">
+    var ws;
+    function WebSocketTest() {
+      if ("WebSocket" in window) {
+        // 打开一个 web socket
+        let wsuri = "ws://pgame.51wnl-cq.com:8881/ws";
+        // let wsuri = "ws://localhost:8881/ws";
+        ws = new WebSocket(wsuri);
+
+        let value = document.getElementById("token").value;
+
+        ws.onopen = function () {
+          // Web Socket 已连接上，使用 send() 方法发送数据
+          ws.send(JSON.stringify({ msgtype: 0, token: value }));
+        };
+
+        ws.onmessage = function (evt) {
+          let received_msg = evt.data;
+          console.log("recv msg:");
+          console.log(received_msg);
+
+          let jmsg = JSON.parse(received_msg);
+          if (jmsg.Msgtype == 0) {
+            console.log("login ok.");
+          } else if (jmsg.Msgtype == 1) {
+            ws.send(JSON.stringify({ msgtype: 2, token: value }));
+          } else if (jmsg.Msgtype == 3) {
+            //这就是你最终需要上传的具有x、y轴坐标的位置信息
+            //发送移动位置时，必须带上发送给你的RoundID
+            let x = Math.floor(Math.random() * jmsg.Wid);
+            let y = Math.floor(Math.random() * jmsg.Hei);
+            ws.send(
+              JSON.stringify({
+                msgtype: 4,
+                token: value,
+                x: x,
+                y: y,
+                RoundID: jmsg.RoundID,
+              })
+            );
+          }
+        };
+
+        ws.onclose = function () {
+          // 关闭 websocket
+          console.log("连接已关闭...");
+
+          // setTimeout(WebSocketTest(),1000)
+          WebSocketTest();
+        };
+      } else {
+        // 浏览器不支持 WebSocket
+        alert("您的浏览器不支持 WebSocket!");
+      }
+    }
+    function onClose() {
+      ws.close();
+    }
+  </script>
+</html>

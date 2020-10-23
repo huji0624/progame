@@ -417,9 +417,7 @@ function sortA(a, b) {
     right: 20px;
 
     .ranking {
-      display: inline-block;
       font-weight: bold;
-      width: 18px;
     }
   }
   .focusOver {
