@@ -159,8 +159,8 @@ func KickPlayer(p *Player) {
 }
 
 const (
-	MapWidth  = 8
-	MapHeight = 6
+	MapWidth  = 10
+	MapHeight = 8
 )
 
 type Game struct {
@@ -934,12 +934,13 @@ func RunUnitTest() bool {
 	MovePlayerForce(testGame, b, 1, 1)
 	MovePlayerForce(testGame, c, 7, 4)
 	MovePlayerForce(testGame, d, 2, 5)
+	c.Info.Gold = 50
 
 	PlayOneRound(testGame, testplayers, func(game *Game, playings map[string]*Player) {
 
 		MovePlayer(testGame, a, 0, 0)
 		MovePlayer(testGame, b, 1, 2)
-		MovePlayer(testGame, c, 8, 4)
+		MovePlayer(testGame, c, 10, 4)
 		MovePlayer(testGame, d, 7, 5)
 
 	}, false)
