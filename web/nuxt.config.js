@@ -38,9 +38,9 @@ export default {
     ],
     link: [{ rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }],
     script: [
-      {
-        src: 'https://hm.baidu.com/hm.js?427c3e9ab87e442121e9cb39aca7231f',
-      },
+      // {
+      //   src: 'https://hm.baidu.com/hm.js?427c3e9ab87e442121e9cb39aca7231f',
+      // },
       {
         src:
           'https://3gimg.qq.com/lightmap/components/geolocation/geolocation.min.js', //腾讯地图组件
@@ -60,7 +60,7 @@ export default {
    ** https://nuxtjs.org/guide/plugins
    */
   plugins: [
-    // '@/plugins/vant',
+    '@/plugins/vant',
     '@/plugins/element-ui',
     '@/plugins/injects',
     '@/plugins/utils',

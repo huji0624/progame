@@ -4,8 +4,9 @@
     <div v-else>
       <el-page-header @back="$router.go(-1)" content="回放详情">
       </el-page-header>
-      <span class="note"> 第 {{ roundNo + 1 }} 轮</span>
+
       <div class="btns">
+        <span class="note"> 第 {{ roundNo + 1 }} 轮</span>
         <span class="btn" @click="onPre()">上 一 轮</span>
         <span class="btn" @click="onNext()">下 一 轮</span>
         <span class="btn" @click="onAutoPlay()">
@@ -25,7 +26,7 @@
           <div v-if="it.players">
             <div v-for="(it, i) in it.players" :key="i">
               <div class="item" :class="{ focus: it.isFocus }" v-if="i < 3">
-                <div v-if="(it.Name + it.Gold).length > 8">
+                <div v-if="(it.Name + it.Gold).length > 6">
                   <marquee scrollamount="2">
                     {{ it.Name }} - {{ it.Gold }}
                   </marquee>
@@ -72,7 +73,7 @@
       </div>
       <div class="wrapbox playerlist">
         <div class="">
-          <div class="tips">选择关注的游戏队伍 <span>最多3个</span></div>
+          <div class="tips">关注的游戏队伍 <span>最多3个</span></div>
           <div v-if="allPlayers.length == 0" class="nodata">暂无游戏队伍</div>
           <div v-else class="list">
             <el-checkbox-group
@@ -92,7 +93,7 @@
         <div class="">
           <div class="tips">关注的游戏队伍</div>
           <div v-if="focusPlayers.length == 0" class="nodata">
-            请在下方选择游戏队伍
+            请选择游戏队伍
           </div>
           <div v-else class="list">
             <div class="crtPos" v-for="(it, i) in focusPlayers" :key="i">
@@ -299,7 +300,7 @@ function sortA(a, b) {
     color: @bodercoler;
   }
   .btns {
-    margin: 50px;
+    margin: 30px auto;
 
     .btn {
       color: #04def0;
@@ -323,7 +324,8 @@ function sortA(a, b) {
     box-shadow: 0 0 #333333;
     border-radius: 10px;
     border: 7px @bodercoler solid;
-    margin: 10px auto;
+    margin: 10px;
+    margin-left: 400px;
     box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
     .items {
       width: 100px;
@@ -379,7 +381,7 @@ function sortA(a, b) {
   .wrapbox {
     position: absolute;
     top: 170px;
-    right: 20px;
+    left: 20px;
     width: 300px;
     font-size: 14px;
     padding: 12px;
@@ -402,7 +404,7 @@ function sortA(a, b) {
       min-width: 150px;
       z-index: 2000;
       width: 300px;
-      max-height: 300px;
+      max-height: 200px;
       line-height: 1.4;
       text-align: justify;
       overflow-y: auto;
@@ -410,31 +412,26 @@ function sortA(a, b) {
   }
   .playerlist {
     top: 400px;
-    right: 20px;
   }
   .focusPlayer {
-    top: 170px;
-    right: 20px;
-
+    top: 270px;
     .ranking {
       font-weight: bold;
     }
   }
   .focusOver {
-    top: 170px;
-    left: 20px;
+    top: 70px;
     .crtPos {
       text-align: left;
       color: #fcf8a7;
       line-height: 30px;
     }
     .list {
-      max-height: 160px;
+      max-height: 100px;
     }
   }
   .rank {
-    top: 400px;
-    left: 20px;
+    top: 675px;
     .ranking {
       font-size: 16px;
       color: #fcf8a7;
@@ -445,9 +442,9 @@ function sortA(a, b) {
   }
   .tname {
     display: inline-block;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: bold;
-    width: 96px;
+    width: 94px;
     color: #add5fd;
   }
   .gold {
@@ -479,7 +476,7 @@ function sortA(a, b) {
 }
 .el-checkbox {
   color: #04def0;
-  line-height: 30px;
+  line-height: 24px;
 }
 .el-checkbox__input.is-indeterminate .el-checkbox__inner {
   background-color: #04def0;

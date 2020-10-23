@@ -15,6 +15,7 @@
     "@wnl/util": "^1.2.0",
     "element-ui": "^2.13.2",
     "lib-flexible": "^0.3.2",
+    "mta-h5-analysis": "^2.0.19",
     "normalize.css": "^8.0.1",
     "nuxt": "^2.14.0",
     "postcss-pxtorem": "^5.1.1",
