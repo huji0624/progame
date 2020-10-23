@@ -1,20 +1,14 @@
 <template>
   <div class="container">
-    <span class="note"> 第 {{ info.RoundID + 1 }} 轮</span>
     <div class="btns">
+      <span class="note"> 第 {{ info.RoundID + 1 }} 轮</span>
       <span class="btn" @click="init()"> 开始游戏 </span>
       <span class="btn" @click="onClose">结束游戏</span>
     </div>
 
     <div class="main" :style="{ width: mainW + 'px', height: mainH + 'px' }">
-      <div
-        @mouseover="mouseOver(it)"
-        @click="onClick(it)"
-        class="items"
-        v-for="(it, i) in total"
-        :key="i"
-      >
-        <div class="gold">{{ it.gold }}</div>
+      <div class="items" v-for="(it, i) in total" :key="i">
+        <div class="gold">{{ it.Gold }}</div>
         <div v-if="it.players">
           <div v-for="(it, i) in it.players" :key="i">
             <div class="item" :class="{ focus: it.isFocus }" v-if="i < 3">
@@ -29,31 +23,13 @@
         </div>
       </div>
     </div>
-
-    <!-- 悬浮盒子 -->
-    <div class="wrapbox focusOver">
-      <div class="conta">
-        <div class="tips">棋盘格信息</div>
-        <div v-if="!crtPos" class="nodata">鼠标移过棋盘，展示数据</div>
-        <div v-else class="crtPos">
-          当前坐标：{{ crtPos }} 金币数量：{{ crtGold }}
-        </div>
-        <div class="list">
-          <div v-for="(it, i) in playersInfo" :key="i">
-            {{ i + 1 }}、团队：<span class="tname">{{ it.Name }}</span>
-            金币：
-            <span class="gold">{{ it.Gold }}</span>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
 <script>
 let _this;
-let name = 'token';
-let token = 'token';
+let name = 'Jurieo';
+let token = 'Jurieo';
 let wsurl = 'ws://localhost:8881/ws';
 let socket;
 
@@ -67,14 +43,12 @@ export default {
     return {
       isClick: false,
       socket: socket,
-      x: 0,
-      y: 0,
+      maxX: 0,
+      maxY: 0,
       mainW: 0,
       mainH: 0,
       loopId: 0,
-      playersInfo: [],
-      crtPos: '',
-      crtGold: '',
+      iPos: [],
       total: [],
       isFirst: true,
       info: { RoundID: 0 },
@@ -83,35 +57,60 @@ export default {
 
   methods: {
     start() {
-      const { x, y, info } = this;
+      const { maxX, maxY, info } = _this;
       const { Tilemap: tilemap } = info,
         afterArr = [];
-
-      for (let i = 0; i < y; i++) {
-        for (let j = 0; j < x; j++) {
+      let find = false;
+      for (let i = 0; i < maxY; i++) {
+        for (let j = 0; j < maxX; j++) {
           const it = tilemap[i][j];
           const maps = it.Players || [];
           let newA = [];
-          newA = maps.map((it) => {
-            if (it.Name == name) it.isFocus = true;
-            return it;
-          });
+          if (!find) {
+            newA = maps.map((it) => {
+              if (it.Name == name) {
+                it.isFocus = true;
+                _this.iPos = [j, i];
+                find = true;
+              }
+
+              return it;
+            });
+          }
 
           const item = {
             players: newA || [], //玩家属性
             pos: [j, i], //格子的坐标
-            gold: it.Gold, //当前格子金币
+            Gold: it.Gold, //当前格子金币
           };
           afterArr.push(item);
         }
       }
+      //找到最近8个格子
       this.total = afterArr;
-    },
+      const around = _this.requestPos(_this.iPos);
 
-    mouseOver(it) {
-      this.playersInfo = it.players || [];
-      this.crtPos = it.pos;
-      this.crtGold = it.gold;
+      let golds = [];
+      afterArr.map((item) => {
+        around.map((it) => {
+          if (JSON.stringify(item.pos) == JSON.stringify(it)) {
+            golds.push(item);
+          }
+        });
+      });
+      golds = golds.sort(sortA);
+      // console.log('golds', golds);
+
+      let [x, y] = golds[0].pos;
+      socket.send(
+        JSON.stringify({
+          msgtype: 4,
+          token: token,
+          x: x,
+          y: y,
+          RoundID: _this.info.RoundID,
+        })
+      );
     },
 
     init() {
@@ -137,7 +136,6 @@ export default {
       let received_msg = evt.data;
 
       let jmsg = JSON.parse(received_msg);
-      // console.log('recv msg:', jmsg);
       if (jmsg.Msgtype == 0) {
         console.log('login ok.');
       } else if (jmsg.Msgtype == 1) {
@@ -145,34 +143,58 @@ export default {
       } else if (jmsg.Msgtype == 3) {
         _this.info = _this.$deepCopy(jmsg);
         if (_this.isFirst) {
-          _this.x = jmsg.Wid;
-          _this.y = jmsg.Hei;
-          _this.x = jmsg.Wid;
-          _this.mainW = _this.x * 100 + 14;
-          _this.mainH = _this.y * 100 + 14;
+          _this.maxX = jmsg.Wid;
+          _this.maxY = jmsg.Hei;
+          _this.mainW = _this.maxX * 100 + 14;
+          _this.mainH = _this.maxY * 100 + 14;
           _this.isFirst = false;
         }
         _this.start();
-        _this.loopId = setTimeout(() => {
-          if (_this.isClick) clearTimeout(_this.loopId);
-          else {
-            let x = Math.floor(Math.random() * jmsg.Wid);
-            let y = Math.floor(Math.random() * jmsg.Hei);
-            socket.send(
-              JSON.stringify({
-                msgtype: 4,
-                token: token,
-                x: x,
-                y: y,
-                RoundID: _this.info.RoundID,
-              })
-            );
-          }
-        }, 700);
+        // _this.loopId = setTimeout(() => {
+        //   if (_this.isClick) clearTimeout(_this.loopId);
+        //   else {
+        //     let x = Math.floor(Math.random() * jmsg.Wid);
+        //     let y = Math.floor(Math.random() * jmsg.Hei);
+        //     socket.send(
+        //       JSON.stringify({
+        //         msgtype: 4,
+        //         token: token,
+        //         x: x,
+        //         y: y,
+        //         RoundID: _this.info.RoundID,
+        //       })
+        //     );
+        //   }
+        // }, 700);
       }
     },
 
-    onSend(_data) {},
+    /**
+     * 传入坐标返回九宫格的二维数组
+     * @param {array}
+     * @return {array}
+     */
+    requestPos([x, y]) {
+      // debugger;
+      const { maxX, maxY } = _this;
+      const arr = [
+        //获取九宫格数据
+        [x - 1, y - 1], //左上
+        [x, y - 1], //中上
+        [x + 1, y - 1], //右上
+        [x - 1, y], //中左
+        [x + 1, y], //中右
+        [x - 1, y + 1], //左下
+        [x, y + 1], //中下
+        [x + 1, y + 1], //右下
+      ];
+      //1.0 过滤掉边界外的坐标
+      const filterArr = arr.filter(
+        ([posX, posY]) =>
+          !(posX < 0 || posY < 0 || posX >= maxX || posY >= maxY)
+      );
+      return filterArr;
+    },
 
     onError() {
       console.log('socket发生了错误');
@@ -188,7 +210,6 @@ export default {
 
     onClick(it) {
       const [x, y] = it.pos;
-      console.log(x, y);
       _this.isClick = true;
       socket.send(
         JSON.stringify({
