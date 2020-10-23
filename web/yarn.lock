@@ -5111,6 +5111,11 @@ ms@^2.1.1:
   resolved "https://registry.npm.taobao.org/ms/download/ms-2.1.2.tgz#d09d1f357b443f493382a8eb3ccd183872ae6009"
   integrity sha1-0J0fNXtEP0kzgqjrPM0YOHKuYAk=
 
+mta-h5-analysis@^2.0.19:
+  version "2.0.19"
+  resolved "https://registry.npm.taobao.org/mta-h5-analysis/download/mta-h5-analysis-2.0.19.tgz#764ec73365bf4a2ffcc94628c6737f6283fa75c4"
+  integrity sha1-dk7HM2W/Si/8yUYoxnN/YoP6dcQ=
+
 mustache@^2.3.0:
   version "2.3.2"
   resolved "https://registry.npm.taobao.org/mustache/download/mustache-2.3.2.tgz#a6d4d9c3f91d13359ab889a812954f9230a3d0c5"
