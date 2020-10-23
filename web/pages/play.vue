@@ -28,8 +28,8 @@
 
 <script>
 let _this;
-let name = 'Jurieo';
-let token = 'Jurieo';
+let name = '组委会';
+let token = 'QNBwKFpEfNvnCwDZbMohF0GvOLjO2GPW';
 let wsurl = 'ws://localhost:8881/ws';
 let socket;
 
