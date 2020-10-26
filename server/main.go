@@ -67,10 +67,17 @@ func LogStruct(v interface{}) {
 func WriteToClient(c *websocket.Conn, v interface{}) {
 	// log.Println("will write data:")
 	// LogStruct(v)
-	c.WriteJSON(v)
+	outtime := time.Now().Add(1 * time.Second)
+	c.SetWriteDeadline(outtime)
+	err := c.WriteJSON(v)
+	if err != nil {
+		log.Println("write err:", err)
+	}
 }
 
 func WriteToClientData(c *websocket.Conn, data []byte) {
+	outtime := time.Now().Add(1 * time.Second)
+	c.SetWriteDeadline(outtime)
 	err := c.WriteMessage(websocket.TextMessage, data)
 	if err != nil {
 		log.Println("write err:", err)
@@ -159,8 +166,8 @@ func KickPlayer(p *Player) {
 }
 
 const (
-	MapWidth  = 8
-	MapHeight = 6
+	MapWidth  = 10
+	MapHeight = 8
 )
 
 type Game struct {
@@ -934,12 +941,13 @@ func RunUnitTest() bool {
 	MovePlayerForce(testGame, b, 1, 1)
 	MovePlayerForce(testGame, c, 7, 4)
 	MovePlayerForce(testGame, d, 2, 5)
+	c.Info.Gold = 50
 
 	PlayOneRound(testGame, testplayers, func(game *Game, playings map[string]*Player) {
 
 		MovePlayer(testGame, a, 0, 0)
 		MovePlayer(testGame, b, 1, 2)
-		MovePlayer(testGame, c, 8, 4)
+		MovePlayer(testGame, c, 10, 4)
 		MovePlayer(testGame, d, 7, 5)
 
 	}, false)
