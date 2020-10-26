@@ -20,8 +20,23 @@
         <el-checkbox v-model="isAll" slot="reference">
           查看资格玩家排名
         </el-checkbox>
+        <!-- <el-checkbox v-model="isAllowAll" slot="reference">
+          查看玩家综合排名
+        </el-checkbox> -->
       </el-popover>
     </div>
+    <!-- <div class="isall">
+      <el-popover
+        placement="top"
+        width="300"
+        trigger="hover"
+        content="筛选具有排名资格的玩家，即最近游戏中参与超过64局游戏的游戏玩家。"
+      >
+        <el-checkbox v-model="isAll" slot="reference">
+          查看资格玩家综合排名
+        </el-checkbox>
+      </el-popover>
+    </div> -->
     <div class="list">
       <el-row class="rows">
         <el-col :span="6" v-for="(item, i) in tabs" :key="i">
@@ -107,6 +122,7 @@ export default {
     return {
       loopId: '',
       isAll: false,
+      isAllowAll: false,
       All: {},
       respGames: {},
       Gid: 0,
@@ -127,14 +143,17 @@ export default {
   // },
   watch: {
     isAll(n) {
-      if (n === true) this.checkAll(n);
+      if (n === true) this.checkAll();
       else this.All = this.respGames;
     },
+    // isAllowAll(n) {
+    //   if (n) this.checkAllowAll(n);
+    // },
   },
   mounted() {
     _this.loopId = setInterval(() => {
       _this.init();
-    }, 10000);
+    }, 60000);
   },
   methods: {
     async init() {
@@ -170,6 +189,18 @@ export default {
       _this.All = changes;
       console.log(_this.All);
     },
+    // checkAllowAll() {
+    //   let First = new Set(this.All.First);
+    //   let Second = new Set(this.All.Second);
+    //   let Third = new Set(this.All.Third);
+
+    //   let total1 = this.All.First.filter((x) => Second.has(x));
+    //   let total = total1.filter((x) => Third.has(x));
+    //   console.log(total);
+    //   for (let i = 0; i < total.length; i++) {
+    //     const element = total[i];
+    //   }
+    // },
   },
   created() {
     _this = this;

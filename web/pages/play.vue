@@ -30,13 +30,14 @@
 let _this;
 let name = '组委会';
 let token = 'QNBwKFpEfNvnCwDZbMohF0GvOLjO2GPW';
-let wsurl = 'ws://localhost:8881/ws';
+// let wsurl = 'ws://localhost:8881/ws';
+let wsurl = 'ws://pgame.51wnl-cq.com:8881/ws';
 let socket;
 
 export default {
   head() {
     return {
-      title: '游戏回放 - 2020程序员节日游戏',
+      title: '组委会 - 2020程序员节日游戏',
     };
   },
   data() {
@@ -86,8 +87,9 @@ export default {
           afterArr.push(item);
         }
       }
-      //找到最近8个格子
       this.total = afterArr;
+      //寻找周围8个格子
+
       const around = _this.requestPos(_this.iPos);
 
       let golds = [];
@@ -99,7 +101,7 @@ export default {
         });
       });
       golds = golds.sort(sortA);
-      // console.log('golds', golds);
+      console.log('golds', golds[0]);
 
       let [x, y] = golds[0].pos;
       socket.send(
@@ -138,7 +140,15 @@ export default {
       let jmsg = JSON.parse(received_msg);
       if (jmsg.Msgtype == 0) {
         console.log('login ok.');
+        this.$message({
+          message: '连接成功，等待游戏开始',
+          type: 'success',
+        });
       } else if (jmsg.Msgtype == 1) {
+        this.$message({
+          message: '游戏开始',
+          type: 'success',
+        });
         socket.send(JSON.stringify({ msgtype: 2, token: token }));
       } else if (jmsg.Msgtype == 3) {
         _this.info = _this.$deepCopy(jmsg);
