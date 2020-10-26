@@ -2,7 +2,7 @@ import json
 import pprint
 
 def getResult(name):
-    f = open(name+".json")
+    f = open(name+".json",encoding='utf-8')
     t = f.read()
     f.close()
     return json.loads(t)
