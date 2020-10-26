@@ -236,6 +236,9 @@ function compare(a, b) {
 function sortA(a, b) {
   if (a.Gold > b.Gold) return -1;
 }
+function sortB(a, b) {
+  if (a.score < b.score) return -1;
+}
 </script>
 
 <style lang="less" scoped>

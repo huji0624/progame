@@ -1,0 +1,189 @@
+<!DOCTYPE HTML>
+<html>
+   <head>
+   <meta charset="utf-8">
+   <title>菜鸟教程(runoob.com)</title>
+
+    
+         <a ">token:</a>
+	  <input type="text" value="" id="token">
+   <br/>
+    <a ">名字:</a><input type="text" value="" id="name">
+    
+      <script type="text/javascript">
+	  
+	     function getItemGold(a,ower,myIndex,ownGold,count){
+		     if(ower == null){
+			    return a.gold;
+			 }
+		     let aGold = 0;
+			 //移动到这个位置需要多少G币
+		     let aCoin = Math.floor(Math.abs(a.x-ower.x) * 1.5 + Math.abs(a.y-ower.y) * 1.5);
+			 if(aCoin > ower.gold){
+			    //G币不够移动
+				if(aCoin == 0){
+				    //当前位置
+					aGold = a.Gold - 1;
+				}else{
+				    aGold = -1000000;
+				}
+             }else{
+			    if(a.gold > 0 && a.gold % 5 == 0){
+				   //当我的G币少的时候，优先去等着平分人家的
+				   //if(myIndex > (count*2/3)){
+					//	aGold = a.gold - aCoin;
+					//	if(aCoin == 0){
+					//	    aGold--;
+					//	}
+				  // }else{
+						aGold = -999999;
+				   //}
+			    }else if(a.gold == -4 && myIndex >= 3){
+				   //利息最大值是10，所以我就认为是最大
+				   let fourCoin = Math.floor(ownGold * 4 / 10 / 2);
+				   if(fourCoin > 10){
+				       fourCoin = 10;
+				   }
+				   aGold = fourCoin - aCoin;
+				   	if(aCoin == 0){
+					    //原位不动需要减一G币
+						aGold--;
+					}
+			    }else if(a.gold == 7 || a.gold == 11){
+				   //7或者11 都是只有一个玩家的时候获取，其他时候扣除，所以不去了
+				   aGold = -7;
+				}else if(a.gold == 8){
+				   //被多人平分，正式的时候人多这个格子最少3人，所以往大了看  最多4G币
+				   aGold = 4 - aCoin;
+				}else{
+				   //获取G币减去移动需要G币
+				   aGold = a.gold - aCoin;
+				   if(aCoin == 0){
+				        //原位不动需要减一G币
+						aGold--;
+				   }
+			   }
+			}
+			return aGold;
+		 }
+         
+         function WebSocketTest()
+         {
+            if ("WebSocket" in window)
+            {
+               
+               // 打开一个 web socket
+               wsuri = "ws://pgame.51wnl-cq.com:8881/ws"
+               // wsuri = "ws://localhost:8881/ws"
+               var ws = new WebSocket(wsuri);
+
+               var value = document.getElementById("token").value
+			   var name = document.getElementById("name").value
+                
+               ws.onopen = function()
+               {
+                  // Web Socket 已连接上，使用 send() 方法发送数据
+                  ws.send(JSON.stringify({msgtype:0,token:value}));
+               };
+                
+               ws.onmessage = function (evt) 
+               { 
+                  var received_msg = evt.data;
+                  console.log("recv msg:")
+                 // console.log(received_msg)
+
+                  let jmsg = JSON.parse(received_msg)
+                  if(jmsg.Msgtype==0){
+                      console.log("login ok.")
+                  }else if(jmsg.Msgtype==1){
+                    ws.send(JSON.stringify({msgtype:2,token:value}));
+                  }else if(jmsg.Msgtype==3){
+				    let myArray=[];
+					let goldArray = []
+				    let Tilemap = jmsg.Tilemap;
+					let ower;
+					try {
+							
+					// console.log("send 初始数据:  "+JSON.stringify(Tilemap) );
+						for (let i = 0 ;i < jmsg.Hei;i ++ ){
+						   for (let j = 0 ; j < jmsg.Wid; j ++ ){
+							   let item = Tilemap[i][j];
+							   myArray.push({gold:item.Gold,x:j,y:i})
+							
+							   let Players = item.Players;
+							   if(Players != null){
+								   for(k = 0 ;k < Players.length;k ++){
+									   if(Players[k].Name == name){
+										   //自己
+										   ower = {gold:Players[k].Gold,x:j,y:i};
+									   }
+									   goldArray.push(Players[k].Gold)
+								   }
+							   }
+							   }
+						
+						   } 
+						}catch(err){
+						   //在这里处理错误
+				        }
+						let ownGold = 0;
+						goldArray.sort(function(a,b){
+							return b-a;
+						});
+						//我的G币数量排名
+						let myIndex = 0;
+						if(ower != null){
+						    ownGold = ower.gold;
+							for(k = 0 ;k < goldArray.length;k ++){
+								if(ownGold>=goldArray[k]){
+								    myIndex = k;
+								    break;
+								}
+							}
+						}
+						//按照我能获取到的G币数量对其进行排名
+						myArray.sort(function(a,b){
+							return getItemGold(b,ower,myIndex,ownGold,goldArray.length)-getItemGold(a,ower,myIndex,ownGold,goldArray.length) ;
+						})
+						
+						let index = Math.floor(Math.random() * 2)+1;
+						if(index >= myArray.length){
+						   index = (myArray.length - 1);
+						}
+						//算了 不要随机了  就取第一个
+						index = 0;
+						let lastValue = myArray[index];
+						console.log("选择index :  "+index  + "   排名："+myIndex+"   用户数：" +  goldArray.length + "   coin:"+ownGold);
+
+						//发送移动位置时，必须带上发送给你的RoundID
+						ws.send(JSON.stringify({msgtype:4,token:value,x:lastValue.x,y:lastValue.y,RoundID:jmsg.RoundID}));
+                  }
+               };
+                
+               ws.onclose = function()
+               { 
+                  // 关闭 websocket
+                  console.log("连接已关闭..."); 
+                  
+                  // setTimeout(WebSocketTest(),1000)
+                  WebSocketTest()
+               };
+            }
+            
+            else
+            {
+               // 浏览器不支持 WebSocket
+               alert("您的浏览器不支持 WebSocket!");
+            }
+         }
+      </script>
+        
+   </head>
+   <body>
+   
+      <div id="sse">
+         <a href="javascript:WebSocketTest()">运行 WebSocket</a>
+      </div>
+      
+   </body>
+</html>

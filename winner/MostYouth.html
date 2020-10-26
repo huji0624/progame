@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>菜鸟教程(runoob.com)</title>
+
+    <input type="text" value="" id="token" />
+
+    <script type="text/javascript">
+      function WebSocketTest() {
+        if ("WebSocket" in window) {
+          // 打开一个 web socket
+          wsuri = "ws://pgame.51wnl-cq.com:8881/ws";
+          // wsuri = "ws://localhost:8881/ws"
+          var ws = new WebSocket(wsuri);
+
+          var value = document.getElementById("token").value;
+
+          ws.onopen = function () {
+            // Web Socket 已连接上，使用 send() 方法发送数据
+            ws.send(JSON.stringify({ msgtype: 0, token: value }));
+          };
+
+          ws.onmessage = function (evt) {
+            var received_msg = evt.data;
+            console.log("recv msg:");
+            console.log(received_msg);
+
+            let jmsg = JSON.parse(received_msg);
+            if (jmsg.Msgtype == 0) {
+              console.log("login ok.");
+            } else if (jmsg.Msgtype == 1) {
+              ws.send(JSON.stringify({ msgtype: 2, token: value }));
+            } else if (jmsg.Msgtype == 3) {
+              // console.log(jmsg.Tilemap[0][0].Gold) 1 2 3 4 6 9
+              let me,
+                xNow,
+                yNow,
+                maxMoney = 0,
+                xNext,
+                yNext,
+                flag = false;
+              let Aim = new Array(3, 6, 9);
+              let Maybe = new Array(8, 10, 11, 13);
+              let money, xRobot, yRobot;
+
+              //获取当前位置
+              for (var i = 0; i < 8; i++) {
+                for (var j = 0; j < 10; j++) {
+                  if (jmsg.Tilemap[i][j].hasOwnProperty("Players")) {
+                    for (
+                      var k = 0;
+                      k < jmsg.Tilemap[i][j].Players.length;
+                      k++
+                    ) {
+                      if (jmsg.Tilemap[i][j].Players[k].Name == "wzl") {
+                        me = jmsg.Tilemap[i][j].Players[k];
+                        xNow = i;
+                        yNow = j;
+                      }
+                    }
+                  }
+                  //FixedRobot位置
+                  if (jmsg.Tilemap[i][j].hasOwnProperty("Players")) {
+                    for (
+                      var k = 0;
+                      k < jmsg.Tilemap[i][j].Players.length;
+                      k++
+                    ) {
+                      if (jmsg.Tilemap[i][j].Players[k].Name == "FixedRobot") {
+                        money = jmsg.Tilemap[i][j].Players[k];
+                        xRobot = i;
+                        yRobot = j;
+                      }
+                    } //end for k
+                  } //end if
+                } //end for j
+              } //end for i
+
+              if (me.Gold <= 3) {
+                //上
+                if (
+                  xNow - 1 >= 0 &&
+                  jmsg.Tilemap[xNow - 1][yNow].Gold > maxMoney
+                ) {
+                  maxMoney = jmsg.Tilemap[xNow - 1][yNow].Gold;
+                  xNext = xNow - 1;
+                  yNext = yNow;
+                  flag = true;
+                }
+                //左
+                if (
+                  yNow - 1 >= 0 &&
+                  jmsg.Tilemap[xNow][yNow - 1].Gold > maxMoney
+                ) {
+                  maxMoney = jmsg.Tilemap[xNow][yNow - 1].Gold;
+                  xNext = xNow;
+                  yNext = yNow - 1;
+                  flag = true;
+                }
+                //右
+                if (
+                  yNow + 1 <= 9 &&
+                  jmsg.Tilemap[xNow][yNow + 1].Gold > maxMoney
+                ) {
+                  maxMoney = jmsg.Tilemap[xNow][yNow + 1].Gold;
+                  xNext = xNow;
+                  yNext = yNow + 1;
+                  flag = true;
+                }
+                //下
+                if (
+                  xNow + 1 <= 7 &&
+                  jmsg.Tilemap[xNow + 1][yNow].Gold > maxMoney
+                ) {
+                  maxMoney = jmsg.Tilemap[xNow + 1][yNow].Gold;
+                  xNext = xNow + 1;
+                  yNext = yNow;
+                  flag = true;
+                }
+                //原地
+                if (jmsg.Tilemap[xNow][yNow].Gold > maxMoney) {
+                  maxMoney = jmsg.Tilemap[xNow][yNow].Gold;
+                  xNext = xNow;
+                  yNext = yNow;
+                  flag = true;
+                }
+                if (!flag) {
+                  xNext = xNow;
+                  yNext = yNow;
+                }
+              } else if (3 < me.Gold <= 300) {
+                //双外环
+                if (
+                  xNow - 2 >= 0 &&
+                  yNow - 2 >= 0 &&
+                  xNow + 2 <= 7 &&
+                  yNow + 2 <= 9
+                ) {
+                  for (var i = xNow - 2; i <= xNow + 2; i++) {
+                    for (var j = yNow - 2; j <= yNow + 2; j++) {
+                      if (jmsg.Tilemap[i][j].Gold > maxMoney) {
+                        maxMoney = jmsg.Tilemap[i][j].Gold;
+                        xNext = i;
+                        yNext = j;
+                      }
+                    }
+                  }
+                }
+                //单外环
+                else if (
+                  xNow - 1 >= 0 &&
+                  yNow - 1 >= 0 &&
+                  xNow + 1 <= 7 &&
+                  yNow + 1 <= 9
+                ) {
+                  for (var i = xNow - 1; i <= xNow + 1; i++) {
+                    for (var j = yNow - 1; j <= yNow + 1; j++) {
+                      if (jmsg.Tilemap[i][j].Gold > maxMoney) {
+                        maxMoney = jmsg.Tilemap[i][j].Gold;
+                        xNext = i;
+                        yNext = j;
+                      }
+                    }
+                  }
+                } else {
+                  xNext = xNow;
+                  yNext = yNow;
+                }
+              } else {
+                //按轮数走
+                var index = Math.floor(Math.random() * 3);
+                //+1
+                if (jmsg.RoundID <= 16) {
+                  for (var i = 0; i < 8; i++) {
+                    for (var j = 0; j < 10; j++) {
+                      if ((jmsg.Tilemap[i][j].Gold = Aim[index])) {
+                        flag = true;
+                        xNext = i;
+                        yNext = j;
+                        break;
+                      }
+                    }
+                  }
+                }
+                //+2
+                if (16 < jmsg.RoundID <= 32) {
+                  for (var i = 0; i < 8; i = i + 2) {
+                    for (var j = 0; j < 10; j = j + 2) {
+                      if ((jmsg.Tilemap[i][j].Gold = Aim[index])) {
+                        flag = true;
+                        xNext = i;
+                        yNext = j;
+                        break;
+                      }
+                    }
+                  }
+                }
+                //+3
+                if (32 < jmsg.RoundID <= 48) {
+                  for (var i = 0; i < 8; i++) {
+                    for (var j = 0; j < 10; j++) {
+                      if ((jmsg.Tilemap[i][j].Gold = Aim[index])) {
+                        flag = true;
+                        xNext = i;
+                        yNext = j;
+                        break;
+                      }
+                    }
+                  }
+                }
+                //+4
+                if (48 < jmsg.RoundID <= 64) {
+                  for (var i = 0; i < 8; i = i + 2) {
+                    for (var j = 0; j < 10; j = j + 2) {
+                      if ((jmsg.Tilemap[i][j].Gold = Aim[index])) {
+                        flag = true;
+                        xNext = i;
+                        yNext = j;
+                        break;
+                      }
+                    }
+                  }
+                }
+                //+5
+                if (64 < jmsg.RoundID <= 80) {
+                  for (var i = 0; i < 8; i++) {
+                    for (var j = 0; j < 10; j++) {
+                      if ((jmsg.Tilemap[i][j].Gold = Aim[index])) {
+                        flag = true;
+                        xNext = i;
+                        yNext = j;
+                        break;
+                      }
+                    }
+                  }
+                }
+                //+6
+                if (80 < jmsg.RoundID <= 96) {
+                  for (var i = 0; i < 8; i = i + 2) {
+                    for (var j = 0; j < 10; j = j + 2) {
+                      if ((jmsg.Tilemap[i][j].Gold = Aim[index])) {
+                        flag = true;
+                        xNext = i;
+                        yNext = j;
+                        break;
+                      }
+                    }
+                  }
+                }
+                if (!flag) {
+                  xNext = xNow;
+                  yNext = yNow;
+                }
+              }
+              //抢FixedRobot
+              if (money.Gold > me.Gold && me.Gold > 50) {
+                xNext = xRobot;
+                yNext = yRobot;
+              }
+
+              console.log(xNext + "," + yNext + "," + me.Gold);
+
+              //发送移动位置时，必须带上发送给你的RoundID
+              ws.send(
+                JSON.stringify({
+                  msgtype: 4,
+                  token: value,
+                  x: xNext,
+                  y: yNext,
+                  RoundID: jmsg.RoundID,
+                })
+              );
+            }
+          };
+
+          ws.onclose = function () {
+            // 关闭 websocket
+            console.log("连接已关闭...");
+
+            // setTimeout(WebSocketTest(),1000)
+            WebSocketTest();
+          };
+        } else {
+          // 浏览器不支持 WebSocket
+          alert("您的浏览器不支持 WebSocket!");
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="sse">
+      <a href="javascript:WebSocketTest()">运行 WebSocket</a>
+    </div>
+  </body>
+</html>

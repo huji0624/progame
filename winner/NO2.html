@@ -1,0 +1,1175 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+   <meta charset="utf-8">
+   <title>demo</title>
+
+
+   
+
+</head>
+
+<body>
+   <input type="text" value="" id="token">
+
+   <div id="sse">
+      <a href="javascript:WebSocketTest()">运行 WebSocket</a>
+   </div>
+   <script type="text/javascript">
+
+      function WebSocketTest() {
+         if ("WebSocket" in window) {
+
+            // 打开一个 web socket
+            wsuri = "ws://pgame.51wnl-cq.com:8881/ws"
+            // wsuri = "ws://localhost:8881/ws"
+            let ws = new WebSocket(wsuri);
+
+            let token = 'x10eUb8iQGcMAF5DNj5059ns1WJKKfN6'
+            const teamName = '田园码农'
+            ws.onopen = function () {
+               // Web Socket 已连接上，使用 send() 方法发送数据
+               ws.send(JSON.stringify({ msgtype: 0, token: token }));
+            };
+            ws.onmessage = function (evt) {
+               let received_msg = evt.data;
+               console.log("recv msg:")
+               console.log(received_msg)
+               let jmsg = JSON.parse(received_msg)
+               let RoundID = jmsg.RoundID // 当前轮次
+               if (jmsg.Msgtype == 0) {
+                  console.log("login ok.")
+               } else if (jmsg.Msgtype == 1) {
+                  ws.send(JSON.stringify({ msgtype: 2, token: token }));
+               } else if (jmsg.Msgtype == 3) {
+                  // let x = Math.floor(Math.random() * jmsg.Wid)
+                  // let y = Math.floor(Math.random() * jmsg.Hei)
+
+                  let myObj = '' // 我自己对象
+                  let allGolds = [] // 所有格子对象 且去掉了玩家信息  用来表示一个完整的棋盘
+                  let Players = [] // 所有其他玩家对象数组
+                  let Golds = [] // 所有非0金币的对象 按从大到小排序
+                  let GoldsZero1 = [] // 所有零金币 且无人的对象 玩家移动前
+                  let GoldsNegative1 = [] // 所有负金币 且无人的对象 玩家移动前
+                  let isSecend = false // 是否执行第二优解
+                  let isFindZero = false // 是否执行找零大法
+                  let isMost = false // 是否最多金币
+
+                  for (let i = 0; i < jmsg.Tilemap.length; i++) {
+                     let element = jmsg.Tilemap[i];
+                     for (let j = 0; j < element.length; j++) {
+                        let element1 = element[j];
+                        allGolds.push({
+                           Gold: element1.Gold,
+                           x: j,
+                           y: i,
+                        })
+                        if (element1.Gold != 0) {
+                           Golds.push({
+                              Gold: element1.Gold,
+                              x: j,
+                              y: i,
+                              Players: element1.Players
+                           })
+                           if (element1.Gold < 0 && !element1.Players) {
+                              GoldsNegative1.push({
+                                 Gold: element1.Gold,
+                                 x: j,
+                                 y: i,
+                              })
+                           }
+                        } else {
+                           if (!element1.Players) {
+                              GoldsZero1.push({
+                                 Gold: 0,
+                                 x: j,
+                                 y: i,
+                              })
+                           }
+                        }
+                        if (element1.Players) {
+                           element1.Players.forEach(element2 => {
+                              if (element2.Name != teamName) {
+                                 Players.push({
+                                    Name: element2.Name,
+                                    Gold: element2.Gold,
+                                    x: j,
+                                    y: i,
+                                    GoldObj: {
+                                       Gold: element1.Gold,
+                                       x: j,
+                                       y: i,
+                                    }
+                                 })
+                              } else {
+                                 myObj = {
+                                    Name: element2.Name,
+                                    Gold: element2.Gold,
+                                    x: j,
+                                    y: i,
+                                    GoldObj: element1
+                                 }
+                              }
+                           })
+                        }
+                     }
+
+                  }
+                  // 对金币对象按金币数量从大到小排序iii
+                  Golds.sort(function (a, b) {
+                     return b.Gold - a.Gold
+                  })
+                  /*其他玩家移动前*/
+                  let resultObjList1 = [] // 移动之后的结果对象
+                  // 判断自己移动到各个带金币位置之后的金币
+                  for (let i = 0; i < Golds.length; i++) {
+                     let element = JSON.parse(JSON.stringify(Golds[i]))
+                     let Gold = getGoldNumber(myObj, element, 2)
+                     if (Gold) {
+                        resultObjList1.push({
+                           Gold: Gold,
+                           x: element.x,
+                           y: element.y,
+                           zGold: element.Gold
+                        })
+                     }
+                  }
+                  // 从大到小排序
+                  resultObjList1.sort(function (a, b) {
+                     return b.Gold - a.Gold
+                  })
+                  // console.log('排序前的玩家')
+                  // console.log(JSON.parse(JSON.stringify(Players)))
+                  // 对其他玩家按金币从大到小排序
+                  Players.sort(function (a, b) {
+                     return b.Gold - a.Gold
+                  })
+                  console.log('排序后的玩家')
+                  console.log(JSON.parse(JSON.stringify(Players)))
+                  console.log('我的金币')
+                  console.log(myObj.Gold)
+                  console.log('当前轮次')
+                  console.log(RoundID)
+                  if (myObj.Gold > Players[0].Gold) {
+                     isMost = true
+                  }
+                  // if (RoundID > 50) {
+                  //    if (myObj.Gold > Players[0].Gold) {
+                  //       console.log('第二优大法')
+                  //       isSecend = true
+                  //    }
+                  // }
+                  if (RoundID > 60) {
+                     if (myObj.Gold > Players[0].Gold) {
+                        console.log('执行找零大法,保住第一')
+                        isFindZero = true
+                     } else {
+                        isFindZero = false
+                     }
+                  }
+                  if (RoundID > 70) {
+                     // if(myObj.Gold > Players[3].Gold){
+                     //    console.log('第二优大法')
+                     //    isSecend = true
+                     // }else{
+                     //    isSecend = false
+                     // }
+                     if (myObj.Gold > Players[1].Gold) {
+                        console.log('执行找零大法,保住第二')
+                        isFindZero = true
+                     } else {
+                        isFindZero = false
+                     }
+                  }
+                  if (RoundID > 75) {
+                     if (myObj.Gold > Players[2].Gold) {
+                        console.log('执行找零大法,保住第三')
+                        isFindZero = true
+                     } else {
+                        isFindZero = false
+                     }
+                  }
+                  if (RoundID > 80) {
+                     if (myObj.Gold > Players[3].Gold) {
+                        console.log('执行找零大法,保住前4')
+                        isFindZero = true
+                     } else {
+                        isFindZero = false
+                     }
+                  }
+                  // 选用6个得分较高的选手进行碰瓷
+                  let Name1 = '(H·ω·H)'
+                  let Name2 = '麻老虎'
+                  let Name3 = 'coco'
+                  let Name4 = '西门大官人'
+                  let Name5 = '策昌-ws'
+                  let Name6 = '精神小伙'
+                  let threeName = [] // 前三名字
+                  let threeObj = []
+                  let fiveName = [] // 前5名字
+                  let fiveObj = []
+                  let GoldsNegative11 = JSON.parse(JSON.stringify(GoldsNegative1)) // 排序后的
+                  // 对其他玩家按金币从小到大排序
+                  GoldsNegative11.sort(function (a, b) {
+                     return a.Gold - b.Gold
+                  })
+                  for (let i = 0; i < Players.length; i++) {
+                     if (i > 2) {
+                        break;
+                     } else {
+                        threeName.push(Players[i].Name)
+                        threeObj.push(Players[i])
+                     }
+                  }
+                  for (let i = 0; i < Players.length; i++) {
+                     if (i > 4) {
+                        break;
+                     } else {
+                        fiveName.push(Players[i].Name)
+                        fiveObj.push(Players[i])
+                     }
+                  }
+                  // console.log(GoldsNegative11)
+                  // console.log(threeName)
+                  // console.log(threeObj)
+                  // console.log(fiveName)
+                  // console.log(fiveObj)
+                  if (RoundID > 80) {
+                     if (myObj.Gold < Players[3].Gold || myObj.Gold == Players[3].Gold) { // 第5名及以后
+                        console.log('轮次达到81 且 我金币还较少 ，执行碰瓷程序')
+                        let isChoose = false
+                        let x = Math.floor(Math.random() * jmsg.Wid)
+                        let y = Math.floor(Math.random() * jmsg.Hei)
+                        if (threeName.indexOf(Name1) != -1) {
+                           let num = threeName.indexOf(Name1)
+                           if (threeObj[num].GoldObj.Gold == 0) { // (H·ω·H) 原地不动
+                              if (!isChoose) {
+                                 console.log('选中(H·ω·H)')
+                                 x = threeObj[num].x
+                                 y = threeObj[num].y
+                                 isChoose = true
+                              }
+                           }
+                        }
+                        if (threeName.indexOf(Name2) != -1) {
+                           let num = threeName.indexOf(Name2)
+                           if (threeObj[num].GoldObj.Gold == 0) { // 麻老虎 原地不动                     
+                              if (!isChoose) {
+                                 console.log('选中麻老虎')
+                                 x = threeObj[num].x
+                                 y = threeObj[num].y
+                                 isChoose = true
+                              }
+                           }
+                        }
+                        if (fiveName.indexOf(Name3) != -1) { // coco 追第一
+                           let num = fiveName.indexOf(Name3)
+                           if (num > 2) {
+                              if (!isChoose) {
+                                 console.log('选中coco')
+                                 x = threeObj[0].x
+                                 y = threeObj[0].y
+                                 isChoose = true
+                              }
+                           }
+                        }
+                        if (threeName.indexOf(Name4) == 2) { // 西门大官人 直追第二
+                           if (!isChoose) {
+                              console.log('选中西门大官人')
+                              x = threeObj[1].x
+                              y = threeObj[1].y
+                              isChoose = true
+                           }
+                        }
+                        if (fiveName.indexOf(Name5) != -1) { // 策昌-ws 最小最近负数
+                           let num = fiveName.indexOf(Name5)
+                           let lastObj = getLater(JSON.parse(JSON.stringify(GoldsNegative11)), JSON.parse(JSON.stringify(fiveObj[num])))
+                           if (!isChoose) {
+                              console.log('选中策昌-ws')
+                              x = lastObj.x
+                              y = lastObj.y
+                              isChoose = true
+                           }
+
+                        }
+                        if (threeName.indexOf(Name6) != -1) { // 精神小伙 第一个最小负数
+                           let lastObj = GoldsNegative11[0]
+                           if (!isChoose) {
+                              console.log('选中精神小伙')
+                              x = lastObj.x
+                              y = lastObj.y
+                              isChoose = true
+                           }
+                        }
+                        if (isChoose) {
+                           ws.send(JSON.stringify({ msgtype: 4, token: token, x: x, y: y, RoundID: jmsg.RoundID }));
+                           return false
+                        } else {
+                           if (RoundID == 94) { // 最后一步
+                              if (myObj.Gold < Players[6].Gold) {
+                                 console.log('最后一步，得分还是在第7名之后，准备碰瓷一下')
+                                 let Name1 = '最强战队' // 追第一
+                                 let Name2 = 'xieyc' // 追第一
+                                 let Name3 = '早安打工人' // 追第一
+                                 let Name4 = '(H·ω·H)' // 原地不动？
+                                 let Name5 = '策昌-ws'
+                                 let Name6 = '精神小伙'
+                                 let playerObj1 = getPlayerObjByName(Players, Name1)
+                                 let playerObj2 = getPlayerObjByName(Players, Name2)
+                                 let playerObj3 = getPlayerObjByName(Players, Name3)
+                                 let playerObj4 = getPlayerObjByName(Players, Name4)
+                                 let playerObj5 = getPlayerObjByName(Players, Name5)
+                                 let playerObj6 = getPlayerObjByName(Players, Name6)
+                                 let playerObjList = []
+                                 playerObjList.push(playerObj1)
+                                 playerObjList.push(playerObj2)
+                                 playerObjList.push(playerObj3)
+                                 playerObjList.push(playerObj4)
+                                 playerObjList.push(playerObj5)
+                                 playerObjList.push(playerObj6)
+                                 // 对玩家按金币从大到小排序
+                                 playerObjList.sort(function (a, b) {
+                                    return b.Gold - a.Gold
+                                 })
+                                 let newPlayerObjList = [] // 得分比我高的
+                                 let newPlayerNameList = [] // 得分比我高的 名称
+                                 for (let i = 0; i < playerObjList.length; i++) {
+                                    const element = playerObjList[i]
+                                    if (element.Gold > myObj.Gold) {
+                                       newPlayerObjList.push(element)
+                                       newPlayerNameList.push(element.Name)
+                                    }
+                                 }
+                                 if (newPlayerObjList.length) { // 存在得分比我高的  去碰瓷
+                                    let isChoose = false
+                                    let x = ''
+                                    let y = ''
+                                    // if (newPlayerNameList.indexOf(Name4) != -1) { // (H·ω·H) 追第一
+                                    //    if (!isChoose) {
+                                    //       x = Players[0].x
+                                    //       y = Players[0].y
+                                    //       isChoose = true
+                                    //    }
+                                    // }
+                                    if (newPlayerNameList.indexOf(Name1) != -1) { // 最强战队 追第一
+                                       if (!isChoose) {
+                                          x = Players[0].x
+                                          y = Players[0].y
+                                          isChoose = true
+                                       }
+                                    }
+                                    // if (newPlayerNameList.indexOf(Name2) != -1) { // xieyc 追第一
+                                    //    if (!isChoose) {
+                                    //       x = Players[0].x
+                                    //       y = Players[0].y
+                                    //       isChoose = true
+                                    //    }
+                                    // }
+                                    if (newPlayerNameList.indexOf(Name3) != -1) { // 早安打工人 追第一
+                                       if (!isChoose) {
+                                          x = Players[0].x
+                                          y = Players[0].y
+                                          isChoose = true
+                                       }
+                                    }
+                                    if (newPlayerNameList.indexOf(Name5) != -1) { // 策昌-ws 最小最近负数
+                                       let lastObj = getLater(JSON.parse(JSON.stringify(GoldsNegative11)), JSON.parse(JSON.stringify(playerObj5)))
+                                       if (!isChoose) {
+                                          x = lastObj.x
+                                          y = lastObj.y
+                                          isChoose = true
+                                       }
+
+                                    }
+                                    if (newPlayerNameList.indexOf(Name6) != -1) { // 精神小伙 第一个最小负数
+                                       let lastObj = GoldsNegative11[0]
+                                       if (!isChoose) {
+                                          x = lastObj.x
+                                          y = lastObj.y
+                                          isChoose = true
+                                       }
+                                    }
+                                    if (isChoose) {
+                                       ws.send(JSON.stringify({ msgtype: 4, token: token, x: x, y: y, RoundID: jmsg.RoundID }));
+                                       return false
+                                    } else {
+                                       console.log('未达到碰瓷，暂时保分')
+                                       isFindZero = true
+                                    }
+                                 } else { // 不存在得分比我高的  保分
+                                    console.log('不存在得分比我高的  保分')
+                                    isFindZero = true
+                                 }
+                              }
+                           }
+                           console.log('未达到碰瓷条件，暂时保分')
+                           isFindZero = true
+                        }
+                     }
+                  }
+                  // console.log('所有非零金币对象')
+                  // console.log(Golds)
+                  // 假如每人移动一步最佳位置 得到一个新的players
+                  for (let i = 0; i < Players.length; i++) {
+                     let resultObjList = [] // 移动之后的结果对象
+                     let element = Players[i]
+                     // 判断自己移动到各个带金币位置之后的金币
+                     for (let j = 0; j < Golds.length; j++) {
+                        let element1 = JSON.parse(JSON.stringify(Golds[j]))
+                        let Gold = getGoldNumber(JSON.parse(JSON.stringify(element)), element1, 1)
+                        if (Gold) {
+                           resultObjList.push({
+                              Gold: Gold.afterMyGold,
+                              number: Gold.number,
+                              x: element1.x,
+                              y: element1.y,
+                              zGold: element1.Gold
+                           })
+                        }
+                     }
+                     // 从大到小排序
+                     resultObjList.sort(function (a, b) {
+                        return b.Gold - a.Gold
+                     })
+                     // console.log('玩家' + element.Name + '的可移动对象')
+                     // console.log(resultObjList)
+                     // 取最优解 移动
+                     if (resultObjList.length && (resultObjList[0].Gold > (element.Gold - 1))) {
+                        if (element.Name == 'FixedRobot') {
+                           element.Gold = element.Gold - 1
+                        } else {
+                           element.Gold = resultObjList[0].number
+                           element.x = resultObjList[0].x
+                           element.y = resultObjList[0].y
+                        }
+                     } else {
+                        element.Gold = element.Gold - 1
+                     }
+                  }
+                  console.log('其他玩家移动之后的Players')
+                  console.log(Players)
+                  // console.log('插入玩家前的棋盘信息')
+                  // console.log(JSON.parse(JSON.stringify(allGolds)))
+                  // 向棋盘中插入玩家信息
+                  for (let i = 0; i < allGolds.length; i++) {
+                     const element = allGolds[i]
+                     for (let j = 0; j < Players.length; j++) {
+                        const element1 = JSON.parse(JSON.stringify(Players[j]))
+                        if (element.x == element1.x && element.y == element1.y) {
+                           if (element.Players) {
+                              element.Players.push(element1)
+                           } else {
+                              element.Players = [element1]
+                           }
+                        }
+                     }
+                  }
+                  // console.log('插入玩家后的棋盘信息')
+                  // console.log(JSON.parse(JSON.stringify(allGolds)))
+                  let myObj1 = '' // 我自己对象 包含格子信息
+                  let GoldsZero2 = [] // 所有零金币 且无人的对象 玩家移动后
+                  let Golds1 = [] // 所有非0金币的对象 按从大到小排序 因为玩家移动了位置 所以这些构建一个新的
+                  // 遍历棋盘 获取以上数据
+                  allGolds.forEach(element => {
+                     if (element.Gold == 0) {
+                        if (element.x == myObj.x && element.y == myObj.y) {
+                           let newObj = JSON.parse(JSON.stringify(element))
+                           if (newObj.Players) {
+                              newObj.Players.push(myObj)
+                           } else {
+                              newObj.Players = [myObj]
+                           }
+                           myObj1 = {
+                              Name: myObj.Name,
+                              Gold: myObj.Gold,
+                              x: myObj.x,
+                              y: myObj.y,
+                              GoldObj: newObj
+                           }
+                        } else {
+                           if (!element.Players) {
+                              GoldsZero2.push(JSON.parse(JSON.stringify(element)))
+                           }
+                        }
+                     } else {
+                        if (element.x == myObj.x && element.y == myObj.y) {
+                           let newObj = JSON.parse(JSON.stringify(element))
+                           if (newObj.Players) {
+                              newObj.Players.push(myObj)
+                           } else {
+                              newObj.Players = [myObj]
+                           }
+                           Golds1.push(newObj)
+                           myObj1 = {
+                              Name: myObj.Name,
+                              Gold: myObj.Gold,
+                              x: myObj.x,
+                              y: myObj.y,
+                              GoldObj: newObj
+                           }
+                        } else {
+                           Golds1.push(JSON.parse(JSON.stringify(element)))
+                        }
+                     }
+                  })
+                  // console.log('新的棋盘信息')
+                  // console.log(allGolds)
+                  // console.log('新的非0对象')
+                  // console.log(Golds1)
+
+                  // console.log('GoldsZero1')
+                  // console.log(GoldsZero1)
+                  // console.log('GoldsZero2')
+                  // console.log(GoldsZero2)
+                  let GoldsZero = [] // 交集后结果
+                  // 对两次0金币无用户 求交集
+                  GoldsZero1.forEach(element => {
+                     GoldsZero2.forEach(element1 => {
+                        if (element.x == element1.x && element.y == element1.y) {
+                           GoldsZero.push(element1)
+                        }
+                     })
+                  })
+                  // 对0金币无用户进行倒序 减少被别人碰瓷
+                  GoldsZero.reverse()
+
+                  console.log('处理后的0金币无用户')
+                  console.log(GoldsZero)
+                  if (isFindZero) { // 执行找零大法，由于随机找零 容易被碰瓷 所以把所有0格子和负数格子拼接
+                     let x = Math.floor(Math.random() * jmsg.Wid)
+                     let y = Math.floor(Math.random() * jmsg.Hei)
+                     let newZeroAndNegative = GoldsZero.concat(GoldsNegative1)
+                     let newZeroAndNegative1 = [] // 去除-2 避免被碰瓷
+                     newZeroAndNegative.forEach(element => {
+                        if (element.Gold != -2 && element.Gold != -4) {
+                           newZeroAndNegative1.push(element)
+                        }
+                     })
+                     console.log('拼接并且去除-2后的数组')
+                     console.log(newZeroAndNegative1)
+                     let randomNumher = Math.floor(Math.random() * (newZeroAndNegative1.length - 1))
+                     x = newZeroAndNegative1[randomNumher].x
+                     y = newZeroAndNegative1[randomNumher].y
+                     // if (GoldsZero.length) {
+                     //    console.log('随机找0')
+                     //    let randomNumher = Math.floor(Math.random() * (GoldsZero.length - 1))
+                     //    x = GoldsZero[randomNumher].x
+                     //    y = GoldsZero[randomNumher].y
+                     // } else {
+                     //    console.log('随机找负')
+                     //    let randomNumher = Math.floor(Math.random() * (GoldsNegative1.length - 1))
+                     //    x = GoldsNegative1[randomNumher].x
+                     //    y = GoldsNegative1[randomNumher].y
+                     // }
+                     // let resultObj = getGoldsZeroList(GoldsZero,myObj1)
+                     // console.log('resultObj')
+                     // console.log(resultObj)
+                     // let resultGoldZero1 = resultObj.resultGoldZero1
+                     // let resultGoldZero2 = resultObj.resultGoldZero2
+                     // let resultGoldZero3 = resultObj.resultGoldZero3
+                     // if (resultGoldZero1.length) {
+                     //    console.log('1步找零')
+                     //    console.log(resultGoldZero1[0])
+                     //    x = resultGoldZero1[0].x
+                     //    y = resultGoldZero1[0].y
+                     // } else if (resultGoldZero2.length) {
+                     //    console.log('2步找零')
+                     //    console.log(resultGoldZero2[0])
+                     //    x = resultGoldZero2[0].x
+                     //    y = resultGoldZero2[0].y
+                     // } else if (resultGoldZero3.length) {
+                     //    console.log('3步找零')
+                     //    console.log(resultGoldZero3[0])
+                     //    x = resultGoldZero3[0].x
+                     //    y = resultGoldZero3[0].y
+                     // } else {
+                     //    if (GoldsZero.length) {
+                     //       console.log('n步找零')
+                     //       x = GoldsZero[0].x
+                     //       y = GoldsZero[0].y
+                     //    } else {
+                     //       console.log('原地')
+                     //       x = myObj1.x
+                     //       y = myObj1.y
+                     //    }
+                     // }
+                     //发送移动位置时，必须带上发送给你的RoundID
+                     ws.send(JSON.stringify({ msgtype: 4, token: token, x: x, y: y, RoundID: jmsg.RoundID }));
+                     return false
+                  }
+                  let resultObjList2 = [] // 移动之后的结果对象
+                  // 判断自己移动到各个带金币位置之后的金币
+                  for (let i = 0; i < Golds1.length; i++) {
+                     let element = JSON.parse(JSON.stringify(Golds1[i]))
+                     let Gold = getGoldNumber(myObj1, element, 2)
+                     if (Gold) {
+                        resultObjList2.push({
+                           Gold: Gold,
+                           x: element.x,
+                           y: element.y,
+                           zGold: element.Gold
+                        })
+                     }
+                  }
+                  // 从大到小排序
+                  resultObjList2.sort(function (a, b) {
+                     return b.Gold - a.Gold
+                  })
+                  // 对两个resultObjList求交集
+
+                  let resultObjList = []
+                  for (let i = 0; i < resultObjList2.length; i++) {
+                     const element = resultObjList2[i]
+                     let j = 0
+                     for (j = 0; j < resultObjList1.length; j++) {
+                        const element1 = resultObjList1[j]
+                        if (element.x == element1.x && element.y == element1.y) {
+                           if (element.Gold > element1.Gold) {
+                              resultObjList.push(element1)
+                           } else {
+                              resultObjList.push(element)
+                           }
+                           break;
+                        }
+                     }
+                     if (j == resultObjList1.length) {
+                        resultObjList.push(element)
+                     }
+                  }
+                  // 从大到小排序
+                  resultObjList.sort(function (a, b) {
+                     return b.Gold - a.Gold
+                  })
+                  // console.log("玩家移动前")
+                  // console.log(resultObjList1)
+                  // console.log("玩家移动后")
+                  // console.log(resultObjList2)
+                  console.log("两个结果交集")
+                  console.log(resultObjList)
+
+                  if (!isMost) { // 如果我的金币不是最多 则不用躲避其他人 采用玩家移动后的结果
+                     console.log('我的金币不是最多')
+                     resultObjList = resultObjList2
+                     // console.log(JSON.parse(JSON.stringify(resultObjList)))
+                  }
+                  // 判断是否执行第二优解
+                  if (isSecend) { // 对结果进行分层 并去除格子分数最大的结果
+                     let x1 = x2 = x3 = 0
+                     let list1 = list2 = list3 = []
+                     let newResultObjList = JSON.parse(JSON.stringify(resultObjList))
+                     let newResultObjList1 = JSON.parse(JSON.stringify(newResultObjList))
+                     // 格子金币从大到小排序
+                     newResultObjList1.sort(function (a, b) {
+                        return b.zGold - a.zGold
+                     })
+                     let mostGold = newResultObjList1[0].zGold
+                     for (let i = 0; i < newResultObjList.length; i++) {
+                        const element = newResultObjList[i]
+                        if (list1.length != 0) {
+                           if (element.Gold == x1) {
+                              list1.push(element)
+                           } else if (list2.length != 0) {
+                              if (element.Gold == x2) {
+                                 list2.push(element)
+                              } else if (list3.length != 0) {
+                                 if (element.Gold == x3) {
+                                    list3.push(element)
+                                 } else {
+                                    break;
+                                 }
+                              } else {
+                                 list3.push(element)
+                                 x3 = element.Gold
+                              }
+                           } else {
+                              list2.push(element)
+                              x2 = element.Gold
+                           }
+                        } else {
+                           list1.push(element)
+                           x1 = element.Gold
+                        }
+                     }
+                     // console.log('list1')
+                     // console.log(list1)
+                     // console.log('list2')
+                     // console.log(list2)
+                     // console.log('list3')
+                     // console.log(list3)
+                     let result = []
+                     list1.forEach(element => {
+                        if (element.zGold != mostGold) {
+                           result.push(element)
+                        }
+                     })
+                     if (result.length == 0) {
+                        list2.forEach(element => {
+                           if (element.zGold != mostGold) {
+                              result.push(element)
+                           }
+                        })
+                     }
+                     if (result.length == 0) {
+                        list3.forEach(element => {
+                           if (element.zGold != mostGold) {
+                              result.push(element)
+                           }
+                        })
+                     }
+                     if (result.length == 0) {
+                        resultObjList = list2.concat(list3)
+                     } else {
+                        resultObjList = result.reverse()
+                     }
+                     console.log('经过第二优化大法处理后的resultObjList')
+                     console.log(resultObjList)
+                  }
+                  // 如果原地金币数为0
+                  let inSituGold1 = getInSituGold(myObj)
+                  let inSituGold2 = getInSituGold(myObj1)
+                  let inSituGold = inSituGold1 > inSituGold2 ? inSituGold2 : inSituGold1 // 如果留在原地的金币 取小值
+                  console.log('移动非零结果对象')
+                  console.log(resultObjList)
+                  console.log("留在原地的金币")
+                  console.log(inSituGold)
+                  let x = Math.floor(Math.random() * jmsg.Wid)
+                  let y = Math.floor(Math.random() * jmsg.Hei)
+                  if (resultObjList.length != 0) {
+                     if (resultObjList[0].x == myObj1.x && resultObjList[0].y == myObj1.y) { // 最佳移动位置就是原地
+                        if (resultObjList[0].Gold < (myObj1.Gold - 1)) { // 移动到旁边一个无人且为0的位置
+                           console.log("移动小于本身-1")
+                           if (GoldsZero.length) {
+                              let resultObj = getGoldsZeroList(GoldsZero, myObj1)
+                              let resultGoldZero1 = resultObj.resultGoldZero1
+                              console.log('一步可到的零区域')
+                              console.log(resultGoldZero1)
+                              if (resultGoldZero1.length) {
+                                 x = resultGoldZero1[0].x
+                                 y = resultGoldZero1[0].y
+                              } else {
+                                 x = myObj1.x
+                                 y = myObj1.y
+                              }
+                           } else {
+                              x = myObj1.x
+                              y = myObj1.y
+                           }
+                        } else { // 移动
+                           // console.log("移动大于本身-1")
+                           // console.log(resultObjList[0])
+                           x = resultObjList[0].x
+                           y = resultObjList[0].y
+                        }
+                     } else {
+                        // 比较留在原地和移动
+                        if (inSituGold > resultObjList[0].Gold) {
+                           console.log("原地大于移动")
+                           if (inSituGold > (myObj1.Gold - 1)) { // 原地不动
+                              x = myObj1.x
+                              y = myObj1.y
+                           } else { // 移动到旁边一个无人且为0的位置
+                              console.log("原地小于本身-1")
+                              if (GoldsZero.length) {
+                                 let resultObj = getGoldsZeroList(GoldsZero, myObj1)
+                                 let resultGoldZero1 = resultObj.resultGoldZero1
+                                 console.log('一步可到的零区域')
+                                 console.log(resultGoldZero1)
+                                 if (resultGoldZero1.length) {
+                                    x = resultGoldZero1[0].x
+                                    y = resultGoldZero1[0].y
+                                 } else {
+                                    x = myObj1.x
+                                    y = myObj1.y
+                                 }
+                              } else {
+                                 x = myObj1.x
+                                 y = myObj1.y
+                              }
+                           }
+                        } else {
+                           console.log("原地小于等于移动")
+                           if (resultObjList[0].Gold < (myObj1.Gold - 1)) { // 移动到旁边一个无人且为0的位置
+                              console.log("移动小于本身-1")
+                              if (GoldsZero.length) {
+                                 let resultObj = getGoldsZeroList(GoldsZero, myObj1)
+                                 let resultGoldZero1 = resultObj.resultGoldZero1
+                                 console.log('一步可到的零区域')
+                                 console.log(resultGoldZero1)
+                                 if (resultGoldZero1.length) {
+                                    x = resultGoldZero1[0].x
+                                    y = resultGoldZero1[0].y
+                                 } else {
+                                    x = myObj1.x
+                                    y = myObj1.y
+                                 }
+                              } else {
+                                 x = myObj1.x
+                                 y = myObj1.y
+                              }
+                           } else { // 移动
+                              // console.log("移动大于本身-1")
+                              // console.log(resultObjList[0])
+                              if (resultObjList[0].Gold < myObj1.Gold - 2) {
+                                 let resultObj = getGoldsZeroList(GoldsZero, myObj1)
+                                 let resultGoldZero2 = resultObj.resultGoldZero2
+                                 let resultGoldZero3 = resultObj.resultGoldZero3
+                                 console.log('两步可到的零区域')
+                                 console.log(resultGoldZero2)
+                                 if (resultGoldZero2.length) {
+                                    x = resultGoldZero2[0].x
+                                    y = resultGoldZero2[0].y
+                                 } else if (resultGoldZero3.length) {
+                                    x = resultGoldZero3[0].x
+                                    y = resultGoldZero3[0].y
+                                 } else {
+                                    x = resultObjList[0].x
+                                    y = resultObjList[0].y
+                                 }
+                              } else {
+                                 x = resultObjList[0].x
+                                 y = resultObjList[0].y
+                              }
+                           }
+                        }
+                     }
+                  } else {
+                     let resultObj = getGoldsZeroList(GoldsZero, myObj1)
+                     let resultGoldZero1 = resultObj.resultGoldZero1
+                     console.log('一步可到的零区域')
+                     console.log(resultGoldZero1)
+                     if (resultGoldZero1.length) {
+                        if (inSituGold > myObj1.Gold - 1) {
+                           x = myObj1.x
+                           y = myObj1.y
+                        } else {
+                           x = resultGoldZero1[0].x
+                           y = resultGoldZero1[0].y
+                        }
+                     } else {
+                        x = myObj1.x
+                        y = myObj1.y
+                     }
+                  }
+                  // console.log('计算后地址')
+                  // console.log('x:' + x)
+                  // console.log('y:' + y)
+                  //发送移动位置时，必须带上发送给你的RoundID
+                  ws.send(JSON.stringify({ msgtype: 4, token: token, x: x, y: y, RoundID: jmsg.RoundID }));
+               }
+            };
+
+            ws.onclose = function () {
+               // 关闭 websocket
+               console.log("连接已关闭...");
+
+               // setTimeout(WebSocketTest(),1000)
+               WebSocketTest()
+            };
+         }
+
+         else {
+            // 浏览器不支持 WebSocket
+            alert("您的浏览器不支持 WebSocket!");
+         }
+      }
+      function getPlayerObjByName(Players, Name) {
+         let playerObj = ''
+         for (let i = 0; i < Players.length; i++) {
+            const element = Players[i]
+            if (element.Name == Name) {
+               playerObj = JSON.parse(JSON.stringify(element))
+               break;
+            }
+         }
+         return playerObj
+      }
+      // 获取最小且最近
+      function getLater(GoldsNegative, myObj) {
+         let lastNumber = GoldsNegative[0].Gold
+         console.log(lastNumber)
+         let lastList = []
+         GoldsNegative.forEach(element => {
+            if (element.Gold == lastNumber) {
+               lastList.push(element)
+            }
+         })
+         lastList.forEach(element => {
+            let slep = Math.abs(element.x - myObj.x) + Math.abs(element.y - myObj.y)
+            element.slep = slep
+         })
+         // 从小到大排序
+         lastList.sort(function (a, b) {
+            return a.slep - b.slep
+         })
+         console.log(lastList)
+         return lastList[0]
+      }
+      /*获取找零list*/
+      function getGoldsZeroList(GoldsZero, myObj) {
+         let resultGoldZero1 = []
+         let resultGoldZero2 = []
+         let resultGoldZero3 = []
+         GoldsZero.forEach(element => {
+            //  1步找零
+            if (element.x == myObj.x && (element.y == (myObj.y - 1) || element.y == (myObj.y + 1))) {
+               resultGoldZero1.push(element)
+            }
+            if (element.y == myObj.y && (element.x == (myObj.x - 1) || element.x == (myObj.x + 1))) {
+               resultGoldZero1.push(element)
+            }
+            // 2步找零
+            if (element.x == myObj.x && (element.y == (myObj.y - 2) || element.y == (myObj.y + 2))) {
+               resultGoldZero2.push(element)
+            }
+            if (element.y == myObj.y && (element.x == (myObj.x - 2) || element.x == (myObj.x + 2))) {
+               resultGoldZero2.push(element)
+            }
+            if ((element.x == (myObj.x - 1)) && (element.y == (myObj.y - 1))) {
+               resultGoldZero2.push(element)
+            }
+            if ((element.x == (myObj.x - 1)) && (element.y == (myObj.y + 1))) {
+               resultGoldZero2.push(element)
+            }
+            if ((element.x == (myObj.x + 1)) && (element.y == (myObj.y - 1))) {
+               resultGoldZero2.push(element)
+            }
+            if ((element.x == (myObj.x + 1)) && (element.y == (myObj.y + 1))) {
+               resultGoldZero2.push(element)
+            }
+            // 3步找零
+            if (element.x == myObj.x && (element.y == (myObj.y - 3) || element.y == (myObj.y + 3))) {
+               resultGoldZero3.push(element)
+            }
+            if (element.y == myObj.y && (element.x == (myObj.x - 3) || element.x == (myObj.x + 3))) {
+               resultGoldZero3.push(element)
+            }
+            if ((element.x == (myObj.x - 2)) && (element.y == (myObj.y - 1))) {
+               resultGoldZero3.push(element)
+            }
+            if ((element.x == (myObj.x - 2)) && (element.y == (myObj.y + 1))) {
+               resultGoldZero3.push(element)
+            }
+            if ((element.x == (myObj.x - 1)) && (element.y == (myObj.y - 2))) {
+               resultGoldZero3.push(element)
+            }
+            if ((element.x == (myObj.x - 1)) && (element.y == (myObj.y + 2))) {
+               resultGoldZero3.push(element)
+            }
+            if ((element.x == (myObj.x + 2)) && (element.y == (myObj.y - 1))) {
+               resultGoldZero3.push(element)
+            }
+            if ((element.x == (myObj.x + 2)) && (element.y == (myObj.y + 1))) {
+               resultGoldZero3.push(element)
+            }
+            if ((element.x == (myObj.x + 1)) && (element.y == (myObj.y - 2))) {
+               resultGoldZero3.push(element)
+            }
+            if ((element.x == (myObj.x + 1)) && (element.y == (myObj.y + 2))) {
+               resultGoldZero3.push(element)
+            }
+         })
+         return {
+            resultGoldZero1: resultGoldZero1,
+            resultGoldZero2: resultGoldZero2,
+            resultGoldZero3: resultGoldZero3
+         }
+      }
+      /*根据玩家对象获取留在原地后金币*/
+      function getInSituGold(playsObj) {
+         let mostGold = -1
+         let mostGoldCount = 0
+         let inSituGold = 0
+         if (playsObj.GoldObj.Players.length > 1) {
+            playsObj.GoldObj.Players.forEach(element => {
+               if (element.Gold > mostGold) {
+                  mostGold = element.Gold
+                  mostGoldCount = 1
+               } else if (element.Gold == mostGold) {
+                  mostGoldCount = mostGoldCount + 1
+               }
+            })
+            let poor = playsObj.GoldObj.Players.length - mostGoldCount
+            // console.log('分金币人数')
+            // console.log(poor)
+            if (poor > 0) {
+               let give = parseInt(mostGold / 4)
+               let each = parseInt(give / poor)
+               // console.log('give')
+               // console.log(give)
+               // console.log('each')
+               // console.log(each)
+               if (give > 0) {
+                  if (each > 0) {
+                     if (playsObj.Gold == mostGold) { // 分出去
+                        inSituGold = playsObj.Gold - give
+                     } else {
+                        inSituGold = playsObj.Gold + each * mostGoldCount
+                     }
+                  } else {
+                     inSituGold = playsObj.Gold - 1
+                  }
+               }
+            } else {
+               inSituGold = playsObj.Gold - 1
+            }
+         } else {
+            inSituGold = playsObj.Gold - 1
+         }
+         return inSituGold
+      }
+      /*根据玩家对象和金币对象计算最后金币数*/
+      function getGoldNumber(playsObj, GoldObj, status) {
+         let number = 0 // 移动消耗后的金币数
+         let slep = Math.abs(playsObj.x - GoldObj.x) + Math.abs(playsObj.y - GoldObj.y)
+         let needGold = parseInt(slep * 1.5)
+         let isNo = false // 是否无法移动到目标
+         if (slep == 0) {
+            number = playsObj.Gold - 1
+         } else if (needGold > playsObj.Gold) {
+            number = playsObj.Gold - 1
+            isNo = true
+         } else {
+            number = playsObj.Gold - needGold
+         }
+         if (isNo) return false
+         let Gold = 0 // 在该格子能获取的金币数量
+         // console.log('要移动到的位置玩家列表')
+         // console.log(GoldObj.Players)
+         if (GoldObj.Players) {
+            let newPlaysList = [] // 我移动之后玩家列表
+            if ((playsObj.x == GoldObj.x) && (playsObj.y == GoldObj.y)) { // 我在里面
+               GoldObj.Players.forEach(element => {
+                  if (element.Name != playsObj.Name) {
+                     newPlaysList.push(element)
+                  } else {
+                     let newMyObj = JSON.parse(JSON.stringify(element))
+                     newMyObj.Gold = number
+                     newPlaysList.push(newMyObj)
+                  }
+               })
+            } else { // 我不在里面
+               GoldObj.Players.forEach(element => {
+                  newPlaysList.push(element)
+               })
+               let newMyObj = JSON.parse(JSON.stringify(playsObj))
+               newMyObj.Gold = number
+               newPlaysList.push(newMyObj)
+            }
+            if (newPlaysList.length == 1) { // 只有我一个人
+               let element = newPlaysList[0]
+               if (GoldObj.Gold == -4) {
+                  Gold = parseInt(0.5 * (element.Gold * 0.4 > 10 ? 10 : element.Gold * 0.4) - 0.5 * 4)
+                  element.Gold = element.Gold + Gold
+               } else if (GoldObj.Gold == 7 || GoldObj.Gold == 11) {
+                  Gold = GoldObj.Gold
+                  element.Gold = element.Gold + Gold
+               } else if (GoldObj.Gold == 8) {
+                  Gold = GoldObj.Gold
+                  element.Gold = element.Gold + Gold
+               } else if (GoldObj.Gold && (GoldObj.Gold % 5 == 0)) {
+                  Gold = GoldObj.Gold
+                  element.Gold = element.Gold + Gold
+               } else {
+                  Gold = GoldObj.Gold
+                  element.Gold = element.Gold + Gold
+                  if (element.Gold < 0) {
+                     element.Gold = 0
+                  }
+               }
+            } else {
+               if (GoldObj.Gold == -4) {
+                  newPlaysList.forEach(element => {
+                     element.Gold = element.Gold + parseInt((0.5 * (element.Gold * 0.4 > 10 ? 10 : element.Gold * 0.4) - 0.5 * 4) / newPlaysList.length)
+                  })
+               } else if (GoldObj.Gold == 7 || GoldObj.Gold == 11) {
+                  newPlaysList.forEach(element => {
+                     element.Gold = element.Gold - parseInt(GoldObj.Gold / newPlaysList.length)
+                  })
+               } else if (GoldObj.Gold == 8) {
+                  newPlaysList.forEach(element => {
+                     element.Gold = element.Gold + parseInt(GoldObj.Gold / newPlaysList.length)
+                  })
+               } else if (GoldObj.Gold && (GoldObj.Gold % 5 == 0)) {
+                  let total = 0
+                  newPlaysList.forEach(element => {
+                     total = total + element.Gold
+                  })
+                  newPlaysList.forEach(element => {
+                     element.Gold = parseInt((total + GoldObj.Gold) / newPlaysList.length)
+                  })
+               } else {
+                  newPlaysList.forEach(element => {
+                     element.Gold = element.Gold + parseInt(GoldObj.Gold / newPlaysList.length)
+                     if (element.Gold < 0) {
+                        element.Gold = 0
+                     }
+                  })
+               }
+            }
+            // console.log('我移动之后玩家列表')
+            // console.log(newPlaysList)
+            // 分的币
+            let mostGold = -1
+            let mostGoldCount = 0
+            let afterMyGold = 0 // 分币后的我的金币
+            let newMyObj = '' // 新的我
+            newPlaysList.forEach(element => {
+               if (element.Gold > mostGold) {
+                  mostGold = element.Gold
+                  mostGoldCount = 1
+               } else if (element.Gold == mostGold) {
+                  mostGoldCount = mostGoldCount + 1
+               }
+               if (element.Name == playsObj.Name) {
+                  newMyObj = JSON.parse(JSON.stringify(element))
+               }
+            })
+            // console.log('新的我')
+            // console.log(newMyObj)
+            afterMyGold = newMyObj.Gold
+            let poor = newPlaysList.length - mostGoldCount
+            if (poor > 0) {
+               let give = parseInt(mostGold / 4)
+               if (give > 0) {
+                  let each = parseInt(give / poor)
+                  if (each > 0) {
+                     if (newMyObj.Gold == mostGold) { // 分出去
+                        afterMyGold = newMyObj.Gold - give
+                     } else {
+                        afterMyGold = newMyObj.Gold + each * mostGoldCount
+                     }
+                  }
+               }
+            }
+            if (status == 1) {
+               return { afterMyGold: afterMyGold, number: number }
+            } else {
+               return afterMyGold
+            }
+         } else {
+            if (GoldObj.Gold == -4) {
+               Gold = number + parseInt(0.5 * (number * 0.4 > 10 ? 10 : number * 0.4) - 0.5 * 4)
+            } else if (GoldObj.Gold == 7 || GoldObj.Gold == 11) {
+               Gold = number + GoldObj.Gold
+            } else if (GoldObj.Gold == 8) {
+               Gold = number + GoldObj.Gold
+            } else if (GoldObj.Gold && (GoldObj.Gold % 5 == 0)) {
+               Gold = number + GoldObj.Gold
+            } else {
+               Gold = number + GoldObj.Gold
+               if (Gold < 0) {
+                  Gold = 0
+               }
+            }
+            if (status == 1) {
+               return { afterMyGold: Gold, number: number }
+            } else {
+               return Gold
+            }
+         }
+      }
+   </script>
+</body>
+
+</html>

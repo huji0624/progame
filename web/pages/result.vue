@@ -81,7 +81,7 @@ export default {
         { label: '综合得分', name: 'Score' },
         { label: '有钱任性', name: 'Gives' },
         { label: '长跑冠军', name: 'Moves' },
-        { label: '年轻团队', name: 'Third' },
+        { label: '年轻团队', name: 'MostYouth' },
       ],
     };
   },
